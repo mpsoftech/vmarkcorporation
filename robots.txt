@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://vmarkcorporation.com/sitemap.xml
