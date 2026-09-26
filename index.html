@@ -322,13 +322,44 @@
           </div>
 
           <div class="about-visual">
-            <div class="about-image-frame">
-              <img src="assets/images/smart_colour_kitchen_system.jpg"
-                alt="V MARK Corporation Textile Machinery Plant and Colour Kitchen" width="700" height="600">
+            <div class="about-image-card">
+              <div class="about-image-toolbar">
+                <span class="about-diagram-tag">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                  ECOLOPS™ Integrated System Layout
+                </span>
+                <button type="button" class="btn-diagram-preview" id="expandAboutDiagramBtn"
+                  title="Click to view full high-resolution schematic">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    <line x1="11" y1="8" x2="11" y2="14"></line>
+                    <line x1="8" y1="11" x2="14" y2="11"></line>
+                  </svg>
+                  <span>Click to Enlarge</span>
+                </button>
+              </div>
+              <div class="about-image-frame" id="aboutDiagramFrame"
+                title="Click to view full high-resolution schematic">
+                <img src="assets/images/ecolops_diagram.png"
+                  alt="V MARK Corporation ECOLOPS Smart Colour Kitchen Technical Schematic Diagram" width="2760"
+                  height="1744" loading="lazy">
+              </div>
             </div>
-            <div class="about-experience-badge">
-              <span class="exp-number">3.5+</span>
-              <span class="exp-label">Decades Of Excellence</span>
+
+            <div class="about-experience-card">
+              <div class="about-experience-badge">
+                <span class="exp-number">3.5+</span>
+                <span class="exp-label">Decades Of Excellence</span>
+              </div>
+              <div class="about-experience-details">
+                <div class="exp-detail-title">Precision Textile Machinery &amp; Automation</div>
+                <div class="exp-detail-sub">Manufacturing trusted rotary screen printing plants, Smart Colour Kitchens,
+                  and custom engineering solutions since 1990.</div>
+              </div>
             </div>
           </div>
         </div>
@@ -504,7 +535,7 @@
         <!-- Schematic Visual & Equipment Breakdown from Brochure Page 6 & 7 -->
         <div class="ck-schematic-grid">
           <div class="ck-schematic-visual">
-            <img src="assets/images/ecolops_diagram.jpg" alt="V MARK Corporation ECOLOPS Technical Schematic Diagram"
+            <img src="assets/images/ecolops_diagram.png" alt="V MARK Corporation ECOLOPS Technical Schematic Diagram"
               width="800" height="600">
           </div>
           <div class="ck-schematic-info">
@@ -1860,8 +1891,8 @@
               <strong>Phone:</strong> <a href="tel:+918980285862" class="footer-link">+91 8980285862</a>
             </li>
             <li style="color: #cbd5e1;">
-              <strong>Email:</strong> <a href="mailto:vmarkcorporation@gmail.com"
-                class="footer-link">vmarkcorporation@gmail.com</a>
+              <strong>Email:</strong> <a href="mailto:info@vmarkcorporation.com"
+                class="footer-link">info@vmarkcorporation.com</a>
             </li>
             <li style="color: #cbd5e1; font-size: 0.8125rem; line-height: 1.5; margin-top: 0.5rem;">
               <strong>Works:</strong> No. 45/2, Raghubir Industrial Estate 2, Opp. Vatva Railway Station, S.I.M. Mill
@@ -1956,6 +1987,35 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= SCHEMATIC LIGHTBOX MODAL ================= -->
+  <div class="modal-overlay" id="diagramLightboxModal" role="dialog" aria-modal="true"
+    aria-labelledby="diagramModalTitle">
+    <div class="modal-dialog diagram-lightbox-dialog">
+      <button class="modal-close-btn" id="diagramModalCloseBtn" aria-label="Close schematic viewer" type="button">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+
+      <div class="diagram-lightbox-header">
+        <div class="diagram-lightbox-title-box">
+          <span class="section-badge" style="margin-bottom: 0.35rem;">Technical Schematic Layout</span>
+          <h3 id="diagramModalTitle" style="color: var(--navy-950); margin: 0; font-size: 1.35rem; font-weight: 700;">
+            ECOLOPS™ Integrated Smart Colour Kitchen Workflow</h3>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0.25rem 0 0;">Systematically Economical Colour
+            Kitchen Engineering Layout (High-Resolution Diagram)</p>
+        </div>
+      </div>
+
+      <div class="diagram-lightbox-body">
+        <img src="assets/images/ecolops_diagram.png"
+          alt="V MARK Corporation ECOLOPS Smart Colour Kitchen High-Resolution Technical Schematic"
+          class="diagram-lightbox-img" loading="lazy">
       </div>
     </div>
   </div>

@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initNavigation();
   initProductCatalog();
   initProductModal();
+  initDiagramModal();
   initRFQForm();
   initScrollEffects();
 });
