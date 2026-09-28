@@ -1,6 +1,17 @@
 {
+  "firestore": [
+    {
+      "database": "vmarkcorporation",
+      "rules": "firestore.rules"
+    }
+  ],
+  "storage": {
+    "rules": "storage.rules"
+  },
   "hosting": {
     "public": "dist",
+    "cleanUrls": true,
+    "trailingSlash": false,
     "predeploy": [
       "npm run build"
     ],
@@ -11,8 +22,48 @@
     ],
     "rewrites": [
       {
-        "source": "**",
-        "destination": "/index.html"
+        "source": "/admin",
+        "destination": "/admin/index.html"
+      },
+      {
+        "source": "/admin/login",
+        "destination": "/admin/login.html"
+      },
+      {
+        "source": "/admin/products",
+        "destination": "/admin/products.html"
+      },
+      {
+        "source": "/admin/products/new",
+        "destination": "/admin/product-editor.html"
+      },
+      {
+        "source": "/admin/accessories",
+        "destination": "/admin/accessories.html"
+      },
+      {
+        "source": "/admin/accessories/new",
+        "destination": "/admin/accessory-editor.html"
+      },
+      {
+        "source": "/admin/categories",
+        "destination": "/admin/categories.html"
+      },
+      {
+        "source": "/admin/inquiries",
+        "destination": "/admin/inquiries.html"
+      },
+      {
+        "source": "/admin/media",
+        "destination": "/admin/media.html"
+      },
+      {
+        "source": "/admin/content",
+        "destination": "/admin/content.html"
+      },
+      {
+        "source": "/admin/settings",
+        "destination": "/admin/settings.html"
       }
     ]
   }

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Management | V MARK Corporation</title>
+  <link rel="icon" type="image/png" href="/assets/images/vmark_logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+  <div class="admin-layout">
+    <!-- Sidebar -->
+    <aside class="admin-sidebar" id="adminSidebar"></aside>
+
+    <!-- Main Content -->
+    <div class="admin-main">
+      <header class="admin-header" id="adminHeader"></header>
+
+      <main class="admin-content">
+        <!-- Page Title & Actions -->
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.5rem;">
+          <div>
+            <h2 style="font-size:1.45rem;">Machinery Catalog</h2>
+            <p style="color:var(--text-muted);font-size:0.85rem;">Manage textile printing machines, technical specifications, and brochure assets.</p>
+          </div>
+          <div style="display:flex;gap:0.75rem;">
+            <a href="product-editor.html" class="btn btn-primary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              Add New Product
+            </a>
+          </div>
+        </div>
+
+        <!-- Filter & Search Bar -->
+        <div class="filter-bar">
+          <div class="filter-left">
+            <div class="filter-search">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" id="productSearchInput" placeholder="Search by name, spec, or keyword...">
+            </div>
+
+            <select id="categoryFilter" class="filter-select">
+              <option value="all">All Categories</option>
+              <option value="engraving-rotary">Rotary Screen & Engraving</option>
+              <option value="colour-kitchen">Colour Kitchen Machinery</option>
+              <option value="stirrers-mixers">Industrial Stirrers & Mixers</option>
+              <option value="washing-plant">Washing Plant</option>
+            </select>
+
+            <select id="statusFilter" class="filter-select">
+              <option value="all">All Statuses</option>
+              <option value="active">Active Only</option>
+              <option value="inactive">Inactive Only</option>
+            </select>
+          </div>
+
+          <div class="filter-right">
+            <select id="sortBySelect" class="filter-select">
+              <option value="order">Sort: Display Order</option>
+              <option value="name">Sort: Name (A-Z)</option>
+              <option value="date">Sort: Recently Updated</option>
+            </select>
+
+            <span id="productCountBadge" style="font-size:0.8rem;color:var(--text-muted);font-weight:600;">
+              Showing 0 products
+            </span>
+          </div>
+        </div>
+
+        <!-- Products Table Card -->
+        <div class="card">
+          <div class="table-responsive">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th style="width:70px;">Image</th>
+                  <th>Product Name & Slug</th>
+                  <th>Category</th>
+                  <th style="text-align:center;">Order</th>
+                  <th style="text-align:center;">Status</th>
+                  <th>Last Updated</th>
+                  <th style="text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="productsTableBody">
+                <tr>
+                  <td colspan="7" style="text-align:center;padding:3rem;color:var(--text-muted);">
+                    Loading machinery catalog...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script type="module" src="js/products.js"></script>
+</body>
+</html>

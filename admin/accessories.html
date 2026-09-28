@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Accessories Management | V MARK Corporation</title>
+  <link rel="icon" type="image/png" href="/assets/images/vmark_logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+  <div class="admin-layout">
+    <aside class="admin-sidebar" id="adminSidebar"></aside>
+
+    <div class="admin-main">
+      <header class="admin-header" id="adminHeader"></header>
+
+      <main class="admin-content">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.5rem;">
+          <div>
+            <h2 style="font-size:1.45rem;">Parts & Accessories Management</h2>
+            <p style="color:var(--text-muted);font-size:0.85rem;">Manage screen engraving spare parts, endrings, lamps, rings, and workshop consumables.</p>
+          </div>
+          <div>
+            <a href="accessory-editor.html" class="btn btn-primary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              Add New Accessory
+            </a>
+          </div>
+        </div>
+
+        <div class="filter-bar">
+          <div class="filter-left">
+            <div class="filter-search">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" id="accessorySearchInput" placeholder="Search accessories by name, type...">
+            </div>
+
+            <select id="accessoryStatusFilter" class="filter-select">
+              <option value="all">All Statuses</option>
+              <option value="active">Active Only</option>
+              <option value="inactive">Inactive Only</option>
+            </select>
+          </div>
+
+          <div class="filter-right">
+            <span id="accessoryCountBadge" style="font-size:0.8rem;color:var(--text-muted);font-weight:600;">
+              Showing 0 accessories
+            </span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="table-responsive">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th style="width:70px;">Image</th>
+                  <th>Accessory Name & Slug</th>
+                  <th>Compatible Machinery</th>
+                  <th style="text-align:center;">Order</th>
+                  <th style="text-align:center;">Status</th>
+                  <th>Last Updated</th>
+                  <th style="text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="accessoriesTableBody">
+                <tr>
+                  <td colspan="7" style="text-align:center;padding:3rem;color:var(--text-muted);">
+                    Loading accessories...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script type="module" src="js/accessories.js"></script>
+</body>
+</html>

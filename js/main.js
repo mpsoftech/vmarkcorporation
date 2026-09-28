@@ -7,15 +7,63 @@ import {
   trackProductView,
   trackContactInteraction
 } from './firebase.js';
+import { getPublicCatalog, onCatalogChange, loadPublicContent } from './public-catalog-service.js';
+import { resolveImageUrl } from './image-helper.js';
+import { VMARK_PRODUCTS as STATIC_PRODUCTS } from './products-data.js';
+
+let currentCatalog = STATIC_PRODUCTS;
 
 document.addEventListener('DOMContentLoaded', () => {
   initNavigation();
+  initRFQForm();
   initProductCatalog();
   initProductModal();
   initDiagramModal();
-  initRFQForm();
   initScrollEffects();
+
+  // Async load dynamic catalog & CMS content from Firestore database "vmarkcorporation"
+  (async () => {
+    try {
+      currentCatalog = await getPublicCatalog();
+      await applyCMSContent();
+      renderProducts();
+      populateRFQDropdown(currentCatalog);
+    } catch (e) {
+      console.debug('Catalog/CMS load fallback:', e);
+    }
+  })();
+
+  // Re-render when admin updates catalog in Admin Panel
+  onCatalogChange(async () => {
+    try {
+      currentCatalog = await getPublicCatalog();
+      await applyCMSContent();
+      renderProducts();
+      populateRFQDropdown(currentCatalog);
+    } catch (err) {
+      console.debug('Catalog live reload notice:', err);
+    }
+  });
 });
+
+async function applyCMSContent() {
+  try {
+    const hp = await loadPublicContent('homepage');
+    if (hp && hp.heroSubheading) {
+      const sub = document.querySelector('.hero-subheading');
+      if (sub) sub.textContent = hp.heroSubheading;
+    }
+
+    const ct = await loadPublicContent('contact');
+    if (ct && ct.whatsappNumber) {
+      const clean = ct.whatsappNumber.replace(/[^0-9]/g, '');
+      const waBtn = document.querySelector('.floating-whatsapp-btn');
+      if (waBtn) waBtn.href = `https://wa.me/${clean}?text=${encodeURIComponent('Hello V MARK Corporation, I am interested in your textile machinery.')}`;
+    }
+  } catch (err) {
+    console.debug('CMS content apply notice:', err);
+  }
+}
 
 /* ================= NAVIGATION & HEADER ================= */
 function initNavigation() {
@@ -94,17 +142,20 @@ function initNavigation() {
 /* ================= PRODUCT CATALOG (FEATURED PRODUCTS) ================= */
 function initProductCatalog() {
   const gridContainer = document.getElementById('productsGrid');
-  if (!gridContainer || typeof VMARK_PRODUCTS === 'undefined') return;
+  if (!gridContainer) return;
 
   renderProducts();
 }
 
 function renderProducts() {
   const gridContainer = document.getElementById('productsGrid');
-  if (!gridContainer || typeof VMARK_PRODUCTS === 'undefined') return;
+  if (!gridContainer) return;
 
-  // Display only 3 featured products on the homepage
-  const featured = VMARK_PRODUCTS.slice(0, 3);
+  const catalog = (currentCatalog && currentCatalog.length > 0) ? currentCatalog : STATIC_PRODUCTS;
+  if (!catalog || catalog.length === 0) return;
+
+  // Display only 3 featured active products on the homepage
+  const featured = catalog.filter(p => p.status === 'active' || !p.status).slice(0, 3);
 
   gridContainer.innerHTML = featured.map(product => {
     const featureBullets = (product.keyFeatures || []).slice(0, 3).map(feat => `
@@ -116,7 +167,7 @@ function renderProducts() {
       </li>
     `).join('');
 
-    const imgSrc = (product.image && product.image.startsWith('/')) ? product.image : '/' + (product.image || 'assets/images/vmark_logo.png');
+    const imgSrc = resolveImageUrl(product.image);
 
     return `
       <div class="product-card" data-id="${product.id}">
@@ -189,9 +240,10 @@ function initProductModal() {
 
 function openProductModal(productId) {
   const modal = document.getElementById('productDetailModal');
-  if (!modal || typeof VMARK_PRODUCTS === 'undefined') return;
+  if (!modal) return;
 
-  const product = VMARK_PRODUCTS.find(p => p.id === productId);
+  const catalog = (currentCatalog && currentCatalog.length > 0) ? currentCatalog : STATIC_PRODUCTS;
+  const product = catalog.find(p => p.id === productId || p.slug === productId);
   if (!product) return;
 
   activeModalProductId = productId;
@@ -205,7 +257,7 @@ function openProductModal(productId) {
 
   // Image & Identity
   const imgElem = document.getElementById('modalProductImg');
-  const modalImgSrc = (product.image && product.image.startsWith('/')) ? product.image : '/' + (product.image || 'assets/images/vmark_logo.png');
+  const modalImgSrc = resolveImageUrl(product.image);
   imgElem.src = modalImgSrc;
   imgElem.onerror = () => { imgElem.src = '/assets/images/vmark_logo.png'; };
   imgElem.alt = `${product.name} — V MARK Corporation`;
@@ -292,6 +344,51 @@ function closeProductModal() {
 }
 
 /* ================= RFQ FORM HANDLER ================= */
+export function populateRFQDropdown(products = null) {
+  const selectElem = document.getElementById('rfqProductSelect');
+  if (!selectElem) return;
+
+  const catalog = (products && products.length > 0) 
+    ? products 
+    : ((currentCatalog && currentCatalog.length > 0) ? currentCatalog : STATIC_PRODUCTS);
+
+  if (!catalog || catalog.length === 0) return;
+
+  const categories = [
+    { key: 'engraving-rotary', label: 'Rotary Screen Printing & Engraving' },
+    { key: 'colour-kitchen', label: 'Smart Colour Kitchen Systems' },
+    { key: 'stirrers-mixers', label: 'Stirrers, Mixers & Agitators' },
+    { key: 'washing-plant', label: 'Washing Plant' },
+    { key: 'accessories', label: 'Accessories & Spares' }
+  ];
+
+  let html = '<option value="">-- Select Machinery / Equipment --</option>';
+
+  categories.forEach(cat => {
+    const items = catalog.filter(p => (p.category === cat.key || p.categoryId === cat.key) && p.status !== 'inactive');
+    if (items.length > 0) {
+      html += `<optgroup label="${cat.label}">`;
+      items.forEach(p => {
+        html += `<option value="${p.name}">${p.name}</option>`;
+      });
+      html += `</optgroup>`;
+    }
+  });
+
+  const otherItems = catalog.filter(p => 
+    !categories.some(c => c.key === p.category || c.key === p.categoryId) && p.status !== 'inactive'
+  );
+  if (otherItems.length > 0) {
+    html += `<optgroup label="Other Machinery & Custom Solutions">`;
+    otherItems.forEach(p => {
+      html += `<option value="${p.name}">${p.name}</option>`;
+    });
+    html += `</optgroup>`;
+  }
+
+  selectElem.innerHTML = html;
+}
+
 function initRFQForm() {
   const selectElem = document.getElementById('rfqProductSelect');
   const rfqForm = document.getElementById('rfqForm');
@@ -299,26 +396,7 @@ function initRFQForm() {
   const waEnquiryBtn = document.getElementById('rfqWhatsAppEnquiryBtn');
 
   // Populate dynamic select dropdown
-  if (selectElem && typeof VMARK_PRODUCTS !== 'undefined') {
-    selectElem.innerHTML = `
-      <option value="">-- Select Machinery / Equipment --</option>
-      <optgroup label="Rotary Screen Printing & Engraving">
-        ${VMARK_PRODUCTS.filter(p => p.category === 'engraving-rotary').map(p => `<option value="${p.name}">${p.name}</option>`).join('')}
-      </optgroup>
-      <optgroup label="Smart Colour Kitchen Systems">
-        ${VMARK_PRODUCTS.filter(p => p.category === 'colour-kitchen').map(p => `<option value="${p.name}">${p.name}</option>`).join('')}
-      </optgroup>
-      <optgroup label="Stirrers, Mixers & Agitators">
-        ${VMARK_PRODUCTS.filter(p => p.category === 'stirrers-mixers').map(p => `<option value="${p.name}">${p.name}</option>`).join('')}
-      </optgroup>
-      <optgroup label="Washing Plant">
-        ${VMARK_PRODUCTS.filter(p => p.category === 'washing-plant').map(p => `<option value="${p.name}">${p.name}</option>`).join('')}
-      </optgroup>
-      <optgroup label="Accessories & Spares">
-        ${VMARK_PRODUCTS.filter(p => p.category === 'accessories').map(p => `<option value="${p.name}">${p.name}</option>`).join('')}
-      </optgroup>
-    `;
-  }
+  populateRFQDropdown(currentCatalog);
 
   // Form Submission
   if (rfqForm) {
@@ -414,7 +492,7 @@ function initRFQForm() {
   }
 }
 
-function selectProductForRFQ(productName) {
+export function selectProductForRFQ(productName) {
   const rfqSection = document.getElementById('rfq-section');
   const selectElem = document.getElementById('rfqProductSelect');
 
@@ -443,6 +521,10 @@ function selectProductForRFQ(productName) {
     const nameInput = document.getElementById('rfqName');
     if (nameInput) setTimeout(() => nameInput.focus(), 600);
   }
+}
+
+if (typeof window !== 'undefined') {
+  window.selectProductForRFQ = selectProductForRFQ;
 }
 
 /* ================= SCROLL EFFECTS & UTILITIES ================= */

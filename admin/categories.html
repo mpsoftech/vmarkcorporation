@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Category Management | V MARK Corporation</title>
+  <link rel="icon" type="image/png" href="/assets/images/vmark_logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+  <div class="admin-layout">
+    <aside class="admin-sidebar" id="adminSidebar"></aside>
+
+    <div class="admin-main">
+      <header class="admin-header" id="adminHeader"></header>
+
+      <main class="admin-content">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.5rem;">
+          <div>
+            <h2 style="font-size:1.45rem;">Product Categories</h2>
+            <p style="color:var(--text-muted);font-size:0.85rem;">Organize machinery lines into distinct engineering disciplines and brochure sections.</p>
+          </div>
+          <div>
+            <button type="button" class="btn btn-primary" id="openAddCategoryModalBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              Add New Category
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="table-responsive">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th style="width:70px;">Image</th>
+                  <th>Category Name</th>
+                  <th>URL Slug</th>
+                  <th>Description</th>
+                  <th style="text-align:center;">Products</th>
+                  <th style="text-align:center;">Order</th>
+                  <th style="text-align:center;">Status</th>
+                  <th style="text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="categoriesTableBody">
+                <tr>
+                  <td colspan="8" style="text-align:center;padding:3rem;color:var(--text-muted);">
+                    Loading categories...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Add / Edit Category Modal -->
+        <div class="modal-overlay" id="categoryModal">
+          <div class="modal-card">
+            <div class="modal-header">
+              <h3 id="categoryModalTitle">Add New Category</h3>
+              <button type="button" class="modal-close" id="closeCategoryModalBtn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
+            <form id="categoryForm">
+              <div class="modal-body">
+                <input type="hidden" id="catEditId">
+
+                <div class="form-group">
+                  <label class="form-label required" for="catName">Category Name</label>
+                  <input type="text" id="catName" class="form-control" placeholder="e.g., Rotary Screen & Engraving" required>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label required" for="catSlug">URL Slug</label>
+                    <input type="text" id="catSlug" class="form-control" placeholder="engraving-rotary" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="catOrder">Display Order</label>
+                    <input type="number" id="catOrder" class="form-control" value="1" min="1" max="99">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="catDesc">Description</label>
+                  <textarea id="catDesc" class="form-control" style="min-height:75px;" placeholder="Brief overview of this machine category"></textarea>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="catImage">Category Hero / Thumbnail Image</label>
+                  <input type="text" id="catImage" class="form-control" placeholder="/assets/images/rotary_screen_coating_machine.jpg">
+                  <div class="form-hint">Path or URL to representation image</div>
+                </div>
+
+                <div class="form-group" style="display:flex;align-items:center;justify-content:space-between;padding-top:0.5rem;">
+                  <div>
+                    <div class="form-label" style="margin-bottom:0;">Category Status</div>
+                    <div class="form-hint">Active categories show on catalog filters</div>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" id="catStatus" checked>
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="modal-footer">
+                <button type="button" class="btn btn-outline" id="cancelCatModalBtn">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="saveCatBtn">Save Category</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <script type="module" src="js/categories.js"></script>
+</body>
+</html>

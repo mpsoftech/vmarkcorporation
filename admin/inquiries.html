@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Inquiries & Quotes | V MARK Corporation</title>
+  <link rel="icon" type="image/png" href="/assets/images/vmark_logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+  <div class="admin-layout">
+    <aside class="admin-sidebar" id="adminSidebar"></aside>
+
+    <div class="admin-main">
+      <header class="admin-header" id="adminHeader"></header>
+
+      <main class="admin-content">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.5rem;">
+          <div>
+            <h2 style="font-size:1.45rem;">Customer RFQ Inquiries</h2>
+            <p style="color:var(--text-muted);font-size:0.85rem;">Manage machinery quotations, customer requests, internal notes, and sales leads.</p>
+          </div>
+          <div style="display:flex;gap:0.75rem;">
+            <button type="button" class="btn btn-outline" id="exportCsvBtn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              Export to CSV
+            </button>
+          </div>
+        </div>
+
+        <!-- Status Filter Tabs -->
+        <div class="nav-tabs" id="statusTabs">
+          <button type="button" class="tab-btn active" data-status="all">All Inquiries</button>
+          <button type="button" class="tab-btn" data-status="new">
+            New <span id="tabCountNew" class="badge badge-new" style="margin-left:4px;">0</span>
+          </button>
+          <button type="button" class="tab-btn" data-status="contacted">Contacted</button>
+          <button type="button" class="tab-btn" data-status="in-progress">In Progress</button>
+          <button type="button" class="tab-btn" data-status="quoted">Quoted</button>
+          <button type="button" class="tab-btn" data-status="converted">Converted</button>
+          <button type="button" class="tab-btn" data-status="closed">Closed</button>
+          <button type="button" class="tab-btn" data-status="spam">Spam</button>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+          <div class="filter-left">
+            <div class="filter-search">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" id="inquirySearchInput" placeholder="Search customer, company, email, phone...">
+            </div>
+
+            <select id="inquiryProductFilter" class="filter-select">
+              <option value="all">All Equipment Types</option>
+            </select>
+          </div>
+
+          <div class="filter-right">
+            <span id="inquiryCountIndicator" style="font-size:0.8rem;color:var(--text-muted);font-weight:600;">
+              Showing 0 inquiries
+            </span>
+          </div>
+        </div>
+
+        <!-- Inquiries Table Card -->
+        <div class="card">
+          <div class="table-responsive">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Inquiry ID</th>
+                  <th>Customer Information</th>
+                  <th>Company & Location</th>
+                  <th>Equipment Requested</th>
+                  <th>Submitted Date</th>
+                  <th>Status</th>
+                  <th style="text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="inquiriesTableBody">
+                <tr>
+                  <td colspan="7" style="text-align:center;padding:3rem;color:var(--text-muted);">
+                    Loading customer inquiries...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <script type="module" src="js/inquiries.js"></script>
+</body>
+</html>

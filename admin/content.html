@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Website Content Management | V MARK Corporation</title>
+  <link rel="icon" type="image/png" href="/assets/images/vmark_logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+  <div class="admin-layout">
+    <aside class="admin-sidebar" id="adminSidebar"></aside>
+
+    <div class="admin-main">
+      <header class="admin-header" id="adminHeader"></header>
+
+      <main class="admin-content">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.5rem;">
+          <div>
+            <h2 style="font-size:1.45rem;">Website Content Management (CMS)</h2>
+            <p style="color:var(--text-muted);font-size:0.85rem;">Update hero headlines, about text, corporate addresses, and contact info without touching source code.</p>
+          </div>
+          <div>
+            <a href="/index.html" target="_blank" class="btn btn-outline">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+              Preview Public Website
+            </a>
+          </div>
+        </div>
+
+        <!-- Section Navigation Tabs -->
+        <div class="nav-tabs" id="contentTabs">
+          <button type="button" class="tab-btn active" data-tab="homepage">Homepage & Hero</button>
+          <button type="button" class="tab-btn" data-tab="about">About Us & Facility</button>
+          <button type="button" class="tab-btn" data-tab="contact">Contact Information</button>
+          <button type="button" class="tab-btn" data-tab="footer">Footer & Copyright</button>
+        </div>
+
+        <!-- Tab 1: Homepage & Hero -->
+        <div class="tab-pane" id="paneHomepage">
+          <div class="card">
+            <div class="card-header">
+              <h3>Homepage Hero & Operational Metrics</h3>
+            </div>
+            <form id="formHomepage">
+              <div class="card-body">
+                <div class="form-group">
+                  <label class="form-label required" for="heroHeading">Main Hero Heading</label>
+                  <input type="text" id="heroHeading" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label required" for="heroSubheading">Hero Subheading</label>
+                  <textarea id="heroSubheading" class="form-control" style="min-height:75px;" required></textarea>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" for="badgeText">Trust / Certification Badge</label>
+                    <input type="text" id="badgeText" class="form-control">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="ctaPrimaryText">Primary CTA Button</label>
+                    <input type="text" id="ctaPrimaryText" class="form-control">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="ctaSecondaryText">Secondary CTA Button</label>
+                    <input type="text" id="ctaSecondaryText" class="form-control">
+                  </div>
+                </div>
+
+                <h4 style="margin:1.5rem 0 0.85rem;font-size:1rem;color:var(--text-heading);">Live Factory Metrics (Counters)</h4>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" for="statsYears">Years of Excellence</label>
+                    <input type="text" id="statsYears" class="form-control" placeholder="25+">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="statsCountries">Export Countries</label>
+                    <input type="text" id="statsCountries" class="form-control" placeholder="18+">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="statsMachines">Machines Operating</label>
+                    <input type="text" id="statsMachines" class="form-control" placeholder="1,200+">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="statsClients">Satisfied Mills</label>
+                    <input type="text" id="statsClients" class="form-control" placeholder="450+">
+                  </div>
+                </div>
+              </div>
+              <div class="card-footer">
+                <span style="font-size:0.78rem;color:var(--text-muted);">Updates automatically reflect on public homepage</span>
+                <button type="submit" class="btn btn-primary">Save Homepage Content</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Tab 2: About Us -->
+        <div class="tab-pane" id="paneAbout" style="display:none;">
+          <div class="card">
+            <div class="card-header">
+              <h3>About Us & Factory Profile</h3>
+            </div>
+            <form id="formAbout">
+              <div class="card-body">
+                <div class="form-group">
+                  <label class="form-label required" for="aboutHeading">About Us Heading</label>
+                  <input type="text" id="aboutHeading" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="aboutSubheading">Narrative Summary</label>
+                  <textarea id="aboutSubheading" class="form-control" style="min-height:85px;"></textarea>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="aboutMission">Corporate Mission</label>
+                  <textarea id="aboutMission" class="form-control" style="min-height:70px;"></textarea>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="aboutVision">Corporate Vision</label>
+                  <textarea id="aboutVision" class="form-control" style="min-height:70px;"></textarea>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" for="addressFactory">Manufacturing Plant Address</label>
+                    <textarea id="addressFactory" class="form-control" style="min-height:70px;"></textarea>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="addressOffice">Corporate Office Address</label>
+                    <textarea id="addressOffice" class="form-control" style="min-height:70px;"></textarea>
+                  </div>
+                </div>
+              </div>
+              <div class="card-footer">
+                <span style="font-size:0.78rem;color:var(--text-muted);">Updates reflect in footer and About sections</span>
+                <button type="submit" class="btn btn-primary">Save About Content</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Tab 3: Contact Info -->
+        <div class="tab-pane" id="paneContact" style="display:none;">
+          <div class="card">
+            <div class="card-header">
+              <h3>Contact Details & WhatsApp Hotline</h3>
+            </div>
+            <form id="formContact">
+              <div class="card-body">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label required" for="phonePrimary">Primary Telephone / Mobile</label>
+                    <input type="text" id="phonePrimary" class="form-control" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="phoneSecondary">Secondary Telephone / Landline</label>
+                    <input type="text" id="phoneSecondary" class="form-control">
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label required" for="emailSales">Sales & Export Email</label>
+                    <input type="email" id="emailSales" class="form-control" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="emailSupport">General Info Email</label>
+                    <input type="email" id="emailSupport" class="form-control">
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label required" for="whatsappNumber">WhatsApp Inquiry Number</label>
+                    <input type="text" id="whatsappNumber" class="form-control" placeholder="+919825012345" required>
+                    <div class="form-hint">Used for floating WhatsApp button and direct inquiry chat</div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="workingHours">Operating / Workshop Hours</label>
+                    <input type="text" id="workingHours" class="form-control" placeholder="Monday - Saturday: 9:00 AM - 6:30 PM IST">
+                  </div>
+                </div>
+              </div>
+              <div class="card-footer">
+                <span style="font-size:0.78rem;color:var(--text-muted);">Syncs with top-bar, floating buttons, and contact modals</span>
+                <button type="submit" class="btn btn-primary">Save Contact Info</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Tab 4: Footer -->
+        <div class="tab-pane" id="paneFooter" style="display:none;">
+          <div class="card">
+            <div class="card-header">
+              <h3>Footer & Legal Information</h3>
+            </div>
+            <form id="formFooter">
+              <div class="card-body">
+                <div class="form-group">
+                  <label class="form-label" for="footerBio">Footer Company Bio</label>
+                  <textarea id="footerBio" class="form-control" style="min-height:90px;"></textarea>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="footerCopyright">Copyright Notice Line</label>
+                  <input type="text" id="footerCopyright" class="form-control">
+                </div>
+              </div>
+              <div class="card-footer">
+                <button type="submit" class="btn btn-primary">Save Footer Details</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <script type="module" src="js/content.js"></script>
+</body>
+</html>

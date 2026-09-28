@@ -4,32 +4,42 @@
  * WhatsApp enquiry links, Google Analytics tracking, and SEO schemas.
  */
 
-import { VMARK_PRODUCTS } from './products-data.js';
+import { VMARK_PRODUCTS as STATIC_PRODUCTS } from './products-data.js';
+import { getPublicProductById, getPublicCatalog } from './public-catalog-service.js';
+import { resolveImageUrl } from './image-helper.js';
 import {
   submitRFQ,
   trackProductView,
   trackContactInteraction
 } from './firebase.js';
 
-document.addEventListener('DOMContentLoaded', () => {
-  initProductDetailPage();
+let allCatalogProducts = STATIC_PRODUCTS;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    allCatalogProducts = await getPublicCatalog();
+  } catch (e) {
+    allCatalogProducts = STATIC_PRODUCTS;
+  }
+
+  await initProductDetailPage();
   initNavigation();
   initBackToTop();
 });
 
-function initProductDetailPage() {
+async function initProductDetailPage() {
   const urlParams = new URLSearchParams(window.location.search);
   const productId = urlParams.get('id');
 
   const contentWrapper = document.getElementById('productDetailContent');
   const notFoundWrapper = document.getElementById('productNotFound');
 
-  if (!productId || !VMARK_PRODUCTS || !Array.isArray(VMARK_PRODUCTS)) {
+  if (!productId) {
     showNotFound();
     return;
   }
 
-  const product = VMARK_PRODUCTS.find(p => p.id === productId.trim());
+  const product = await getPublicProductById(productId);
 
   if (!product) {
     showNotFound();
@@ -96,7 +106,9 @@ function updateSEO(product) {
     '@type': 'Product',
     'name': product.name,
     'image': [
-      window.location.origin + '/' + (product.image || 'assets/images/vmark_logo.png')
+      resolveImageUrl(product.image).startsWith('http') 
+        ? resolveImageUrl(product.image) 
+        : window.location.origin + resolveImageUrl(product.image)
     ],
     'description': product.shortDesc || product.tagline,
     'brand': {
@@ -153,7 +165,7 @@ function renderHero(product) {
   if (shortDescEl) shortDescEl.textContent = product.shortDesc || product.overview || '';
 
   if (imgEl) {
-    const imgSrc = (product.image && product.image.startsWith('/')) ? product.image : '/' + (product.image || 'assets/images/vmark_logo.png');
+    const imgSrc = resolveImageUrl(product.image);
     imgEl.src = imgSrc;
     imgEl.alt = `${product.name} — V MARK Corporation Ahmedabad`;
     imgEl.onerror = () => {
@@ -267,12 +279,15 @@ function setupRFQForm(product) {
   const waForwardBtn = document.getElementById('rfqWhatsAppForwardBtn');
 
   // Populate product select options
-  if (selectEl && VMARK_PRODUCTS) {
-    selectEl.innerHTML = VMARK_PRODUCTS.map(p => `
-      <option value="${p.name}" ${p.id === product.id ? 'selected' : ''}>
-        ${p.name} (${p.categoryName})
-      </option>
-    `).join('');
+  if (selectEl) {
+    const catalog = (allCatalogProducts && allCatalogProducts.length > 0) ? allCatalogProducts : STATIC_PRODUCTS;
+    if (catalog && catalog.length > 0) {
+      selectEl.innerHTML = catalog.map(p => `
+        <option value="${p.name}" ${(p.id === product.id || p.name === product.name) ? 'selected' : ''}>
+          ${p.name} (${p.categoryName || 'Equipment'})
+        </option>
+      `).join('');
+    }
   }
 
   if (!form) return;
@@ -377,21 +392,21 @@ function setupRFQForm(product) {
 
 function renderRelatedMachinery(product) {
   const container = document.getElementById('relatedProductsGrid');
-  if (!container || !VMARK_PRODUCTS) return;
+  if (!container || !allCatalogProducts) return;
 
   // Find products in the same category, excluding current product
-  const related = VMARK_PRODUCTS
-    .filter(p => p.category === product.category && p.id !== product.id)
+  const related = allCatalogProducts
+    .filter(p => (p.category === product.category || p.categoryId === product.categoryId) && p.id !== product.id)
     .slice(0, 3);
 
   // If fewer than 3, backfill from other categories
   if (related.length < 3) {
-    const others = VMARK_PRODUCTS.filter(p => p.id !== product.id && !related.some(r => r.id === p.id));
+    const others = allCatalogProducts.filter(p => p.id !== product.id && !related.some(r => r.id === p.id));
     related.push(...others.slice(0, 3 - related.length));
   }
 
   container.innerHTML = related.map(rel => {
-    const imgSrc = (rel.image && rel.image.startsWith('/')) ? rel.image : '/' + (rel.image || 'assets/images/vmark_logo.png');
+    const imgSrc = resolveImageUrl(rel.image);
     return `
       <div class="product-card" data-id="${rel.id}">
         <div class="product-card-thumb">

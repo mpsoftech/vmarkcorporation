@@ -4,16 +4,31 @@
  * and responsive card rendering linking to dedicated product pages.
  */
 
-import { VMARK_PRODUCTS } from './products-data.js';
+import { VMARK_PRODUCTS as STATIC_PRODUCTS } from './products-data.js';
+import { getPublicCatalog, onCatalogChange } from './public-catalog-service.js';
 import { trackCategoryFilter, trackSearch } from './firebase.js';
+import { resolveImageUrl } from './image-helper.js';
 
 let currentCategory = 'all';
 let currentSearchQuery = '';
+let currentCatalog = STATIC_PRODUCTS;
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    currentCatalog = await getPublicCatalog();
+  } catch (e) {
+    currentCatalog = STATIC_PRODUCTS;
+  }
+
   initCatalogPage();
   initNavigation();
   initBackToTop();
+
+  // Listen to Admin live updates
+  onCatalogChange(async () => {
+    currentCatalog = await getPublicCatalog();
+    renderCatalog();
+  });
 });
 
 function initCatalogPage() {
@@ -77,10 +92,10 @@ function initCatalogPage() {
 function renderCatalog() {
   const gridContainer = document.getElementById('catalogGrid');
   const countIndicator = document.getElementById('catalogCountIndicator');
-  if (!gridContainer || !VMARK_PRODUCTS) return;
+  if (!gridContainer || !currentCatalog) return;
 
-  const filtered = VMARK_PRODUCTS.filter(product => {
-    const matchesCategory = (currentCategory === 'all') || (product.category === currentCategory);
+  const filtered = currentCatalog.filter(product => {
+    const matchesCategory = (currentCategory === 'all') || (product.category === currentCategory || product.categoryId === currentCategory);
     const matchesSearch = !currentSearchQuery || (
       (product.name && product.name.toLowerCase().includes(currentSearchQuery)) ||
       (product.tagline && product.tagline.toLowerCase().includes(currentSearchQuery)) ||
@@ -93,7 +108,7 @@ function renderCatalog() {
 
   // Update count indicator
   if (countIndicator) {
-    countIndicator.innerHTML = `Showing <strong>${filtered.length}</strong> of <strong>${VMARK_PRODUCTS.length}</strong> industrial machines and accessories`;
+    countIndicator.innerHTML = `Showing <strong>${filtered.length}</strong> of <strong>${currentCatalog.length}</strong> industrial machines and accessories`;
   }
 
   if (filtered.length === 0) {
@@ -139,7 +154,7 @@ function renderCatalog() {
       </li>
     `).join('');
 
-    const imgSrc = (product.image && product.image.startsWith('/')) ? product.image : '/' + (product.image || 'assets/images/vmark_logo.png');
+    const imgSrc = resolveImageUrl(product.image);
 
     return `
       <div class="product-card" data-id="${product.id}">

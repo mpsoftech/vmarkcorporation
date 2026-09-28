@@ -2,26 +2,11 @@
  * Firebase Services Configuration & SDK Integration
  * V MARK Corporation - Textile Machinery
  */
-import { initializeApp } from "firebase/app";
 import { getAnalytics, isSupported, logEvent } from "firebase/analytics";
-import { getFirestore, collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { app, db, storage } from "../admin/js/admin-firebase.js";
+import { createInquiry } from "../admin/js/admin-db.js";
 
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyAEKBeyYlg5T5cvwZvNTUx5vmaWJIeVUvc",
-  authDomain: "vmark-corporation.firebaseapp.com",
-  projectId: "vmark-corporation",
-  storageBucket: "vmark-corporation.firebasestorage.app",
-  messagingSenderId: "759926371618",
-  appId: "1:759926371618:web:e550ac1c4f429d3e56217b",
-  measurementId: "G-KR4TRHHK7G"
-};
-
-// 1. Initialize Firebase App
-export const app = initializeApp(firebaseConfig);
-
-// 2. Initialize Cloud Firestore Database
-export const db = getFirestore(app);
+export { app, db, storage };
 
 // 3. Initialize Firebase Analytics safely (checks environment & browser capability)
 export let analytics = null;
@@ -107,42 +92,40 @@ export function trackContactInteraction(method, context = "general") {
 }
 
 /**
- * Submit an RFQ inquiry to Cloud Firestore and record lead conversion in Analytics
+ * Submit an RFQ inquiry to Cloud Firestore & Admin Panel and record lead conversion in Analytics
  * @param {object} inquiryData 
  * @returns {Promise<{success: boolean, id?: string, error?: string}>}
  */
 export async function submitRFQ(inquiryData) {
   try {
-    const inquiriesRef = collection(db, "inquiries");
-    const docRef = await addDoc(inquiriesRef, {
+    // 1. Create in Admin Database (Dual Layer: Firestore + Persistent Store + Cross-tab broadcast)
+    const adminDbResult = await createInquiry({
       name: inquiryData.name,
       company: inquiryData.company,
       email: inquiryData.email,
       phone: inquiryData.phone,
       country: inquiryData.country || "India",
+      city: inquiryData.city || "",
       product: inquiryData.product,
       quantity: Number(inquiryData.quantity) || 1,
       message: inquiryData.message || "",
-      source: "website_rfq_form",
-      status: "new",
-      createdAt: serverTimestamp(),
-      userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "unknown"
+      attachment: inquiryData.attachment || null
     });
 
-    // Record generate_lead conversion event in Firebase Analytics
+    // 2. Record generate_lead conversion event in Firebase Analytics
     trackEvent("generate_lead", {
       currency: "INR",
       value: 1,
       lead_source: "website_rfq",
       machinery_requested: inquiryData.product,
       company_name: inquiryData.company,
-      inquiry_id: docRef.id
+      inquiry_id: adminDbResult.id
     });
 
-    console.log(`[Firebase Firestore] RFQ logged successfully with ID: ${docRef.id}`);
-    return { success: true, id: docRef.id };
+    console.log(`[Firebase & Admin DB] RFQ logged successfully with ID: ${adminDbResult.id}`);
+    return { success: true, id: adminDbResult.id };
   } catch (error) {
-    console.error("[Firebase Firestore] Error saving inquiry:", error);
+    console.error("[Inquiry Submission] Error saving inquiry:", error);
     
     // Log error event in Analytics
     trackEvent("rfq_submission_error", {
