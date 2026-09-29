@@ -172,7 +172,7 @@ async function loadAndRenderInquiries() {
           </td>
           <td style="text-align:right;white-space:nowrap;">
             <div style="display:inline-flex;gap:0.35rem;">
-              <a href="inquiry-detail.html?id=${encodeURIComponent(inq.id)}" class="btn btn-outline btn-sm">
+              <a href="/admin/inquiry-detail.html?id=${encodeURIComponent(inq.id)}" class="btn btn-outline btn-sm">
                 Details
               </a>
               <button type="button" class="btn-icon delete-inq-btn" data-id="${inq.id}" data-name="${escapeHtml(inq.customerName)}" title="Delete inquiry" style="color:#dc2626;">

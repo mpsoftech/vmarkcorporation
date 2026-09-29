@@ -88,7 +88,7 @@ async function renderDashboard() {
             <span class="badge ${badgeClass}">${inq.status}</span>
           </td>
           <td style="text-align:right;">
-            <a href="inquiry-detail.html?id=${encodeURIComponent(inq.id)}" class="btn btn-outline btn-sm">
+            <a href="/admin/inquiry-detail.html?id=${encodeURIComponent(inq.id)}" class="btn btn-outline btn-sm">
               View
             </a>
           </td>

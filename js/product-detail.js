@@ -169,6 +169,7 @@ function renderHero(product) {
     imgEl.src = imgSrc;
     imgEl.alt = `${product.name} — V MARK Corporation Ahmedabad`;
     imgEl.onerror = () => {
+      imgEl.onerror = null;
       imgEl.src = '/assets/images/vmark_logo.png';
     };
   }

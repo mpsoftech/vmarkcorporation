@@ -257,7 +257,8 @@ function formatCatalogItem(item, index = 0) {
 
 export function seedInitialData(force = false) {
   const seeded = localStorage.getItem(STORAGE_KEYS.LAST_SEEDED);
-  if (seeded && !force) return;
+  const currentProds = getLocal(STORAGE_KEYS.PRODUCTS, []);
+  if (seeded && !force && Array.isArray(currentProds) && currentProds.length > 0) return;
 
   console.log('[Admin DB] Seeding initial data cache from official catalog...');
 
@@ -370,6 +371,11 @@ export async function syncWithFirestore() {
           firestoreCats.push({ ...data, id: d.id, image: resolveImageUrl(data.image) });
         });
         setLocal(STORAGE_KEYS.CATEGORIES, firestoreCats);
+      } else {
+        // Populate Firestore categories collection with defaults if empty
+        for (const cat of DEFAULT_CATEGORIES) {
+          await setDoc(doc(db, "categories", cat.id), cat, { merge: true });
+        }
       }
     } catch (e) {
       console.debug('[Firestore Sync] Categories fetch notice:', e.message);
@@ -440,7 +446,13 @@ export async function pushBrochureCatalogToFirestore() {
       await setDoc(doc(db, "products", prod.id), prod, { merge: true });
     }
 
-    console.log(`[Firestore Sync] Successfully pushed ${products.length} products to Firestore database "vmarkcorporation".`);
+    // Save accessories
+    const accessories = getLocal(STORAGE_KEYS.ACCESSORIES, []);
+    for (const acc of accessories) {
+      await setDoc(doc(db, "accessories", acc.id), acc, { merge: true });
+    }
+
+    console.log(`[Firestore Sync] Successfully pushed ${products.length} products and ${accessories.length} accessories to Firestore database "vmarkcorporation".`);
   } catch (err) {
     console.warn('[Firestore Sync] Push catalog notice:', err.message);
   }
@@ -463,13 +475,50 @@ export function setupFirestoreListeners() {
       });
 
       const localProds = getLocal(STORAGE_KEYS.PRODUCTS, []);
+      const localSorted = [...(localProds || [])].sort((a, b) => String(a.id || '').localeCompare(String(b.id || '')));
+      const remoteSorted = [...remoteProds].sort((a, b) => String(a.id || '').localeCompare(String(b.id || '')));
+
+      const localHash = localSorted.map(p => `${p.id}_${p.updatedAt || ''}_${p.status || ''}_${p.name || ''}_${p.categoryId || ''}`).join('|');
+      const remoteHash = remoteSorted.map(p => `${p.id}_${p.updatedAt || ''}_${p.status || ''}_${p.name || ''}_${p.categoryId || ''}`).join('|');
+
+      if (localHash === remoteHash) {
+        return; // Exact same data - do not broadcast redundant event to avoid UI blink
+      }
+
       const map = new Map();
-      localProds.forEach(p => map.set(p.id, p));
+      (Array.isArray(localProds) ? localProds : []).forEach(p => p && map.set(p.id, p));
       remoteProds.forEach(p => map.set(p.id, p));
 
       setLocal(STORAGE_KEYS.PRODUCTS, Array.from(map.values()));
       broadcastEvent('product_updated_live');
     }, (err) => console.debug('[Firestore Listener] Products listener:', err.message));
+
+    // Listen to Accessories
+    onSnapshot(collection(db, "accessories"), (snapshot) => {
+      if (snapshot.empty) return;
+      const remoteAccs = [];
+      snapshot.forEach(d => {
+        remoteAccs.push(formatCatalogItem({ ...d.data(), id: d.id }));
+      });
+
+      const localAccs = getLocal(STORAGE_KEYS.ACCESSORIES, []);
+      const localSorted = [...(localAccs || [])].sort((a, b) => String(a.id || '').localeCompare(String(b.id || '')));
+      const remoteSorted = [...remoteAccs].sort((a, b) => String(a.id || '').localeCompare(String(b.id || '')));
+
+      const localHash = localSorted.map(a => `${a.id}_${a.updatedAt || ''}_${a.status || ''}`).join('|');
+      const remoteHash = remoteSorted.map(a => `${a.id}_${a.updatedAt || ''}_${a.status || ''}`).join('|');
+
+      if (localHash === remoteHash) {
+        return;
+      }
+
+      const map = new Map();
+      (Array.isArray(localAccs) ? localAccs : []).forEach(a => a && map.set(a.id, a));
+      remoteAccs.forEach(a => map.set(a.id, a));
+
+      setLocal(STORAGE_KEYS.ACCESSORIES, Array.from(map.values()));
+      broadcastEvent('accessory_updated_live');
+    }, (err) => console.debug('[Firestore Listener] Accessories listener:', err.message));
 
     // Listen to Inquiries
     onSnapshot(collection(db, "inquiries"), (snapshot) => {
@@ -503,32 +552,37 @@ if (typeof window !== 'undefined') {
 }
 
 // ================= CRUD: PRODUCTS =================
-export async function getAllProducts(filterOptions = {}) {
-  // 1. Fetch live snapshot from Firestore if online
-  try {
-    const snap = await getDocs(collection(db, "products"));
-    if (!snap.empty) {
-      const firestoreProducts = [];
-      snap.forEach(d => {
-        firestoreProducts.push(formatCatalogItem({ ...d.data(), id: d.id }));
-      });
+export async function getAllProducts(filterOptions = {}, forceRemote = false) {
+  let localProducts = getLocal(STORAGE_KEYS.PRODUCTS, []);
 
-      const localProducts = getLocal(STORAGE_KEYS.PRODUCTS, []);
-      const map = new Map();
-      localProducts.forEach(p => map.set(p.id, p));
-      firestoreProducts.forEach(p => map.set(p.id, p)); // Firestore takes priority
+  // Cache-first: only query Firestore over network if cache is empty or explicitly requested
+  if (forceRemote || !Array.isArray(localProducts) || localProducts.length === 0) {
+    try {
+      const snap = await getDocs(collection(db, "products"));
+      if (!snap.empty) {
+        const firestoreProducts = [];
+        snap.forEach(d => {
+          firestoreProducts.push(formatCatalogItem({ ...d.data(), id: d.id }));
+        });
 
-      const merged = Array.from(map.values());
-      setLocal(STORAGE_KEYS.PRODUCTS, merged);
+        const map = new Map();
+        (Array.isArray(localProducts) ? localProducts : []).forEach(p => p && map.set(p.id, p));
+        firestoreProducts.forEach(p => map.set(p.id, p)); // Firestore takes priority
+
+        localProducts = Array.from(map.values());
+        setLocal(STORAGE_KEYS.PRODUCTS, localProducts);
+      }
+    } catch (err) {
+      console.debug('[Admin DB] Firestore getAllProducts fallback to cache:', err.message);
     }
-  } catch (err) {
-    console.debug('[Admin DB] Firestore getAllProducts fallback to cache:', err.message);
   }
 
-  let products = getLocal(STORAGE_KEYS.PRODUCTS, []);
+  if (!Array.isArray(localProducts) || localProducts.length === 0) {
+    seedInitialData(true);
+    localProducts = getLocal(STORAGE_KEYS.PRODUCTS, []);
+  }
 
-  // Ensure image URLs are resolved
-  products = products.map(p => ({
+  let products = (localProducts || []).filter(Boolean).map(p => ({
     ...p,
     image: resolveImageUrl(p.image),
     galleryImages: Array.isArray(p.galleryImages) && p.galleryImages.length > 0
@@ -567,35 +621,30 @@ export async function getAllProducts(filterOptions = {}) {
 
 export async function getProductById(id) {
   if (!id) return null;
-  const cleanId = id.trim();
+  const cleanId = String(id).trim();
 
-  // Try direct fetch from Firestore database "vmarkcorporation"
+  // 1. Instant cache-first lookup (0ms, avoids waiting for network and UI blink)
+  const products = getLocal(STORAGE_KEYS.PRODUCTS, []);
+  let found = products.find(p => p && (p.id === cleanId || p.slug === cleanId));
+  if (found) {
+    return formatCatalogItem(found);
+  }
+
+  // 2. Fallback to Firestore remote if not yet in local cache
   try {
     const docRef = doc(db, "products", cleanId);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
-      const product = formatCatalogItem({ ...docSnap.data(), id: docSnap.id });
-      // Update local cache
-      const products = getLocal(STORAGE_KEYS.PRODUCTS, []);
-      const idx = products.findIndex(p => p.id === cleanId || p.slug === cleanId);
-      if (idx !== -1) {
-        products[idx] = product;
-      } else {
-        products.push(product);
-      }
-      setLocal(STORAGE_KEYS.PRODUCTS, products);
-      return product;
+      found = formatCatalogItem({ ...docSnap.data(), id: docSnap.id });
+      const currentProds = getLocal(STORAGE_KEYS.PRODUCTS, []);
+      currentProds.push(found);
+      setLocal(STORAGE_KEYS.PRODUCTS, currentProds);
+      return found;
     }
   } catch (err) {
     console.debug('[Admin DB] Firestore getDoc notice:', err.message);
   }
 
-  // Fallback to local cache
-  const products = getLocal(STORAGE_KEYS.PRODUCTS, []);
-  const found = products.find(p => p.id === cleanId || p.slug === cleanId);
-  if (found) {
-    return formatCatalogItem(found);
-  }
   return null;
 }
 
@@ -717,27 +766,35 @@ export async function toggleProductStatus(id, newStatus) {
 }
 
 // ================= CRUD: ACCESSORIES =================
-export async function getAllAccessories(filterOptions = {}) {
-  // Sync live from Firestore
-  try {
-    const snap = await getDocs(collection(db, "accessories"));
-    if (!snap.empty) {
-      const firestoreAccs = [];
-      snap.forEach(d => {
-        firestoreAccs.push(formatCatalogItem({ ...d.data(), id: d.id }));
-      });
-      const localAccs = getLocal(STORAGE_KEYS.ACCESSORIES, []);
-      const map = new Map();
-      localAccs.forEach(a => map.set(a.id, a));
-      firestoreAccs.forEach(a => map.set(a.id, a));
-      setLocal(STORAGE_KEYS.ACCESSORIES, Array.from(map.values()));
+export async function getAllAccessories(filterOptions = {}, forceRemote = false) {
+  let localAccs = getLocal(STORAGE_KEYS.ACCESSORIES, []);
+
+  // Sync from Firestore if cache is empty or forceRemote requested
+  if (forceRemote || !Array.isArray(localAccs) || localAccs.length === 0) {
+    try {
+      const snap = await getDocs(collection(db, "accessories"));
+      if (!snap.empty) {
+        const firestoreAccs = [];
+        snap.forEach(d => {
+          firestoreAccs.push(formatCatalogItem({ ...d.data(), id: d.id }));
+        });
+        const map = new Map();
+        (Array.isArray(localAccs) ? localAccs : []).forEach(a => a && map.set(a.id, a));
+        firestoreAccs.forEach(a => map.set(a.id, a));
+        localAccs = Array.from(map.values());
+        setLocal(STORAGE_KEYS.ACCESSORIES, localAccs);
+      }
+    } catch (e) {
+      console.debug('[Admin DB] Accessories sync notice:', e.message);
     }
-  } catch (e) {
-    console.debug('[Admin DB] Accessories sync notice:', e.message);
   }
 
-  let accessories = getLocal(STORAGE_KEYS.ACCESSORIES, []);
-  accessories = accessories.map(a => formatCatalogItem(a));
+  if (!Array.isArray(localAccs) || localAccs.length === 0) {
+    seedInitialData(true);
+    localAccs = getLocal(STORAGE_KEYS.ACCESSORIES, []);
+  }
+
+  let accessories = (localAccs || []).map(a => formatCatalogItem(a));
   
   if (filterOptions.status && filterOptions.status !== 'all') {
     accessories = accessories.filter(a => a.status === filterOptions.status);
@@ -755,9 +812,29 @@ export async function getAllAccessories(filterOptions = {}) {
 }
 
 export async function getAccessoryById(id) {
+  if (!id) return null;
+  const cleanId = String(id).trim();
+
   const accessories = getLocal(STORAGE_KEYS.ACCESSORIES, []);
-  const found = accessories.find(a => a.id === id || a.slug === id);
-  return found ? formatCatalogItem(found) : null;
+  let found = accessories.find(a => a && (a.id === cleanId || a.slug === cleanId));
+  if (found) {
+    return formatCatalogItem(found);
+  }
+
+  try {
+    const docSnap = await getDoc(doc(db, "accessories", cleanId));
+    if (docSnap.exists()) {
+      found = formatCatalogItem({ ...docSnap.data(), id: docSnap.id });
+      const currentAccs = getLocal(STORAGE_KEYS.ACCESSORIES, []);
+      currentAccs.push(found);
+      setLocal(STORAGE_KEYS.ACCESSORIES, currentAccs);
+      return found;
+    }
+  } catch (e) {
+    console.debug('[Admin DB] Firestore getDoc accessory notice:', e.message);
+  }
+
+  return null;
 }
 
 export async function saveAccessory(data) {
@@ -855,7 +932,7 @@ export async function toggleAccessoryStatus(id, newStatus) {
   setLocal(STORAGE_KEYS.ACCESSORIES, accessories);
 
   try {
-    await updateDoc(doc(db, "accessories", id), { status: acc.status, updatedAt: acc.updatedAt });
+    await setDoc(doc(db, "accessories", id), { ...acc, status: acc.status, updatedAt: acc.updatedAt }, { merge: true });
   } catch (e) {
     console.warn('Firestore toggle accessory status pending:', e.message);
   }
@@ -865,12 +942,35 @@ export async function toggleAccessoryStatus(id, newStatus) {
 }
 
 // ================= CRUD: CATEGORIES =================
-export async function getAllCategories() {
-  const categories = getLocal(STORAGE_KEYS.CATEGORIES, DEFAULT_CATEGORIES);
+export async function getAllCategories(forceRemote = false) {
+  let categories = getLocal(STORAGE_KEYS.CATEGORIES, DEFAULT_CATEGORIES);
+
+  // Cache-first: only query Firestore over network if cache is empty or explicitly requested
+  if (forceRemote || !Array.isArray(categories) || categories.length === 0) {
+    try {
+      const snap = await getDocs(collection(db, "categories"));
+      if (!snap.empty) {
+        const firestoreCats = [];
+        snap.forEach(d => {
+          firestoreCats.push({ ...d.data(), id: d.id, image: resolveImageUrl(d.data().image) });
+        });
+        setLocal(STORAGE_KEYS.CATEGORIES, firestoreCats);
+        categories = firestoreCats;
+      }
+    } catch (e) {
+      console.debug('[Admin DB] Categories direct fetch notice:', e.message);
+    }
+  }
+
+  if (!Array.isArray(categories) || categories.length === 0) {
+    categories = [...DEFAULT_CATEGORIES];
+    setLocal(STORAGE_KEYS.CATEGORIES, categories);
+  }
   const products = getLocal(STORAGE_KEYS.PRODUCTS, []);
+  const safeProducts = Array.isArray(products) ? products : [];
   
   return categories.map(cat => {
-    const count = products.filter(p => p.categoryId === cat.id || p.category === cat.id).length;
+    const count = safeProducts.filter(p => p && (p.categoryId === cat.id || p.category === cat.id)).length;
     return {
       ...cat,
       image: resolveImageUrl(cat.image),
@@ -880,26 +980,52 @@ export async function getAllCategories() {
 }
 
 export async function getCategoryById(id) {
-  const categories = getLocal(STORAGE_KEYS.CATEGORIES, DEFAULT_CATEGORIES);
-  const found = categories.find(c => c.id === id || c.slug === id);
+  if (!id) return null;
+  // Try direct fetch from Firestore
+  try {
+    const snap = await getDoc(doc(db, "categories", id));
+    if (snap.exists()) {
+      const cat = { ...snap.data(), id: snap.id };
+      cat.image = resolveImageUrl(cat.image);
+      return cat;
+    }
+  } catch (e) {
+    console.debug('[Admin DB] Category direct getDoc notice:', e.message);
+  }
+
+  let categories = getLocal(STORAGE_KEYS.CATEGORIES, DEFAULT_CATEGORIES);
+  if (!Array.isArray(categories) || categories.length === 0) {
+    categories = [...DEFAULT_CATEGORIES];
+  }
+  const found = categories.find(c => c && (c.id === id || c.slug === id));
   return found ? { ...found, image: resolveImageUrl(found.image) } : null;
 }
 
 export async function saveCategory(categoryData) {
-  const categories = getLocal(STORAGE_KEYS.CATEGORIES, DEFAULT_CATEGORIES);
+  let categories = getLocal(STORAGE_KEYS.CATEGORIES, DEFAULT_CATEGORIES);
+  if (!Array.isArray(categories) || categories.length === 0) {
+    categories = [...DEFAULT_CATEGORIES];
+  }
   const now = new Date().toISOString();
   const cleanImage = resolveImageUrl(categoryData.image);
 
   if (!categoryData.id) {
-    const slug = (categoryData.slug || categoryData.name)
+    const rawSlug = (categoryData.slug || categoryData.name || 'category')
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
 
+    const baseSlug = rawSlug || `cat-${Date.now()}`;
+    let uniqueId = baseSlug;
+    let counter = 1;
+    while (categories.some(c => c && c.id === uniqueId)) {
+      uniqueId = `${baseSlug}-${counter++}`;
+    }
+
     const newCat = {
       ...categoryData,
-      id: slug,
-      slug: slug,
+      id: uniqueId,
+      slug: uniqueId,
       image: cleanImage,
       status: categoryData.status || 'active',
       displayOrder: Number(categoryData.displayOrder) || categories.length + 1,
@@ -911,15 +1037,15 @@ export async function saveCategory(categoryData) {
     setLocal(STORAGE_KEYS.CATEGORIES, categories);
 
     try {
-      await setDoc(doc(db, "categories", slug), newCat, { merge: true });
+      await setDoc(doc(db, "categories", uniqueId), newCat, { merge: true });
     } catch (e) {
       console.warn('Firestore save category pending:', e.message);
     }
 
     broadcastEvent('category_created', newCat);
-    return { success: true, category: newCat, id: slug };
+    return { success: true, category: newCat, id: uniqueId };
   } else {
-    const index = categories.findIndex(c => c.id === categoryData.id);
+    const index = categories.findIndex(c => c && c.id === categoryData.id);
     const existing = index !== -1 ? categories[index] : {};
 
     const updated = {
@@ -949,7 +1075,8 @@ export async function saveCategory(categoryData) {
 
 export async function deleteCategory(id) {
   let categories = getLocal(STORAGE_KEYS.CATEGORIES, DEFAULT_CATEGORIES);
-  categories = categories.filter(c => c.id !== id);
+  if (!Array.isArray(categories)) categories = [...DEFAULT_CATEGORIES];
+  categories = categories.filter(c => c && c.id !== id);
   setLocal(STORAGE_KEYS.CATEGORIES, categories);
 
   try {

@@ -9,6 +9,7 @@ import { uploadImageToStorage } from './admin-storage.js';
 let editingProductId = null;
 let currentMainImage = '';
 let currentGallery = [];
+let userEditedSlug = false;
 
 document.addEventListener('DOMContentLoaded', async () => {
   const urlParams = new URLSearchParams(window.location.search);
@@ -16,28 +17,49 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const pageTitle = editingProductId ? 'Edit Product' : 'Add New Product';
   const navId = editingProductId ? 'products' : 'product-new';
-  await initAdminLayout(navId, pageTitle, ['Admin', 'Products', pageTitle]);
 
-  await loadCategoriesDropdown();
+  // 1. Concurrently fetch layout, categories, and product data from instant cache
+  const layoutPromise = initAdminLayout(navId, pageTitle, ['Admin', 'Products', pageTitle]);
+  const categoriesPromise = getAllCategories();
+  const productPromise = editingProductId ? getProductById(editingProductId) : Promise.resolve(null);
+
+  const [_, categories, product] = await Promise.all([
+    layoutPromise,
+    categoriesPromise,
+    productPromise
+  ]);
+
+  // 2. Pre-select target category immediately on dropdown render (eliminates blinking/jumping)
+  const targetCategory = product ? (product.categoryId || product.category || 'engraving-rotary') : '';
+  populateCategoriesDropdown(categories, targetCategory, product?.categoryName);
+
   setupImageHandlers();
   setupRepeaterControls();
   setupFormSubmit();
 
   if (editingProductId) {
-    await loadProductData(editingProductId);
+    if (!product) {
+      showToast('Product not found in database.', 'error');
+      setTimeout(() => { window.location.href = '/admin/products.html'; }, 1500);
+      return;
+    }
+    populateProductFormData(product);
   } else {
-    // Populate default empty specs & features
+    // Populate default empty specs & features for new product
     addSpecRow("Operation Mode", "Automatic / Semi-Automatic");
     addSpecRow("Chassis Build", "Heavy duty industrial fabrication");
     addFeatureRow("Heavy duty vibration-free steel construction");
     addFeatureRow("Easy to clean and maintain between batches");
     addApplicationRow("Textile rotary screen engraving departments");
 
-    // Auto slug generator on new product
+    // Auto slug generator on new product (only if slug not manually typed)
     const nameInput = document.getElementById('prodName');
     const slugInput = document.getElementById('prodSlug');
+    slugInput?.addEventListener('input', () => {
+      userEditedSlug = true;
+    });
     nameInput?.addEventListener('input', () => {
-      if (!editingProductId) {
+      if (!editingProductId && !userEditedSlug) {
         slugInput.value = nameInput.value
           .toLowerCase()
           .replace(/[^a-z0-9]+/g, '-')
@@ -47,85 +69,100 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 });
 
-async function loadCategoriesDropdown() {
+function populateCategoriesDropdown(categories, selectedCategory = '', fallbackCategoryName = '') {
   const select = document.getElementById('prodCategory');
   if (!select) return;
 
-  const categories = await getAllCategories();
-  select.innerHTML = categories.map(cat => `
-    <option value="${cat.id}">${escapeHtml(cat.name)}</option>
-  `).join('');
+  try {
+    const safeCats = Array.isArray(categories) && categories.length > 0 ? categories : [];
+    
+    let optionsHtml = safeCats.map(cat => `
+      <option value="${cat.id}" ${cat.id === selectedCategory ? 'selected' : ''}>${escapeHtml(cat.name)}</option>
+    `).join('');
+
+    // If product has a custom category not present in defaults, append it
+    if (selectedCategory && !safeCats.some(c => c.id === selectedCategory)) {
+      optionsHtml += `<option value="${escapeHtml(selectedCategory)}" selected>${escapeHtml(fallbackCategoryName || selectedCategory)}</option>`;
+    }
+
+    select.innerHTML = optionsHtml;
+    if (selectedCategory) {
+      select.value = selectedCategory;
+    }
+  } catch (err) {
+    console.error('Failed to populate categories dropdown:', err);
+  }
 }
 
-async function loadProductData(id) {
-  try {
-    const product = await getProductById(id);
-    if (!product) {
-      showToast('Product not found in database.', 'error');
-      setTimeout(() => { window.location.href = 'products.html'; }, 1500);
-      return;
-    }
+function populateProductFormData(product) {
+  document.getElementById('pageFormTitle').textContent = `Edit: ${product.name}`;
+  document.getElementById('prodName').value = product.name || '';
+  document.getElementById('prodSlug').value = product.slug || product.id || '';
+  document.getElementById('prodBadge').value = product.badge || '';
+  document.getElementById('prodTagline').value = product.tagline || '';
+  document.getElementById('prodShortDesc').value = product.shortDesc || '';
+  document.getElementById('prodOverview').value = product.overview || '';
 
-    document.getElementById('pageFormTitle').textContent = `Edit: ${product.name}`;
-    document.getElementById('prodName').value = product.name || '';
-    document.getElementById('prodSlug').value = product.slug || product.id || '';
-    document.getElementById('prodBadge').value = product.badge || '';
-    document.getElementById('prodTagline').value = product.tagline || '';
-    document.getElementById('prodShortDesc').value = product.shortDesc || '';
-    document.getElementById('prodOverview').value = product.overview || '';
-    document.getElementById('prodCategory').value = product.categoryId || product.category || 'engraving-rotary';
-    document.getElementById('prodStatus').checked = (product.status === 'active');
-    document.getElementById('prodDisplayOrder').value = product.displayOrder || 1;
+  // Set Category
+  const targetCategory = product.categoryId || product.category;
+  const select = document.getElementById('prodCategory');
+  if (select && targetCategory) {
+    select.value = targetCategory;
+  }
 
-    // View on public site button
-    const liveBtn = document.getElementById('viewLiveBtn');
-    if (liveBtn) {
-      liveBtn.href = `/product.html?id=${encodeURIComponent(product.id)}`;
-      liveBtn.style.display = 'inline-flex';
-    }
+  document.getElementById('prodStatus').checked = (product.status === 'active');
+  document.getElementById('prodDisplayOrder').value = product.displayOrder || 1;
 
-    // Set Main Image
-    if (product.image) {
-      setMainImage(product.image);
-    }
+  // View on public site button
+  const liveBtn = document.getElementById('viewLiveBtn');
+  if (liveBtn) {
+    liveBtn.href = `/product.html?id=${encodeURIComponent(product.id)}`;
+    liveBtn.style.display = 'inline-flex';
+  }
 
-    // Set Gallery
-    if (Array.isArray(product.galleryImages) && product.galleryImages.length > 0) {
-      currentGallery = [...product.galleryImages];
-      renderGallery();
-    }
+  // Set Main Image
+  if (product.image) {
+    setMainImage(product.image);
+  }
 
-    // Set Specs
-    const specsContainer = document.getElementById('specsContainer');
+  // Set Gallery
+  if (Array.isArray(product.galleryImages) && product.galleryImages.length > 0) {
+    currentGallery = [...product.galleryImages];
+    renderGallery();
+  }
+
+  // Set Specs
+  const specsContainer = document.getElementById('specsContainer');
+  if (specsContainer) {
     specsContainer.innerHTML = '';
     if (Array.isArray(product.specs) && product.specs.length > 0) {
       product.specs.forEach(s => addSpecRow(s.label, s.value));
     } else {
       addSpecRow("Operation Mode", "Automatic");
     }
+  }
 
     // Set Features
     const featContainer = document.getElementById('featuresContainer');
-    featContainer.innerHTML = '';
-    if (Array.isArray(product.keyFeatures) && product.keyFeatures.length > 0) {
-      product.keyFeatures.forEach(f => addFeatureRow(f));
-    } else {
-      addFeatureRow("Precision engineering design");
+    if (featContainer) {
+      featContainer.innerHTML = '';
+      if (Array.isArray(product.keyFeatures) && product.keyFeatures.length > 0) {
+        product.keyFeatures.forEach(f => addFeatureRow(f));
+      } else {
+        addFeatureRow("Precision engineering design");
+      }
     }
 
     // Set Applications
     const appContainer = document.getElementById('applicationsContainer');
-    appContainer.innerHTML = '';
-    if (Array.isArray(product.applications) && product.applications.length > 0) {
-      product.applications.forEach(a => addApplicationRow(a));
-    } else {
-      addApplicationRow("Textile screen printing plants");
+    if (appContainer) {
+      appContainer.innerHTML = '';
+      if (Array.isArray(product.applications) && product.applications.length > 0) {
+        product.applications.forEach(a => addApplicationRow(a));
+      } else {
+        addApplicationRow("Textile screen printing plants");
+      }
     }
-
-  } catch (err) {
-    console.error('Error loading product for edit:', err);
-    showToast('Failed to load product details.', 'error');
-  }
 }
 
 // ================= SPECS & REPEATERS =================
@@ -137,6 +174,7 @@ function setupRepeaterControls() {
 
 function addSpecRow(label = '', value = '') {
   const container = document.getElementById('specsContainer');
+  if (!container) return;
   const row = document.createElement('div');
   row.className = 'repeater-row spec-row';
   row.innerHTML = `
@@ -151,6 +189,7 @@ function addSpecRow(label = '', value = '') {
 
 function addFeatureRow(text = '') {
   const container = document.getElementById('featuresContainer');
+  if (!container) return;
   const row = document.createElement('div');
   row.className = 'repeater-row feature-row';
   row.innerHTML = `
@@ -165,6 +204,7 @@ function addFeatureRow(text = '') {
 
 function addApplicationRow(text = '') {
   const container = document.getElementById('applicationsContainer');
+  if (!container) return;
   const row = document.createElement('div');
   row.className = 'repeater-row app-row';
   row.innerHTML = `
@@ -182,6 +222,9 @@ function setupImageHandlers() {
   const mainFileInput = document.getElementById('mainImgFileInput');
   const mainUrlInput = document.getElementById('prodImageUrl');
   const removeMainBtn = document.getElementById('removeMainImgBtn');
+
+  // Stop click bubbling on file inputs to avoid double trigger
+  mainFileInput?.addEventListener('click', (e) => e.stopPropagation());
 
   // Trigger file picker
   mainDropzone?.addEventListener('click', () => mainFileInput?.click());
@@ -226,6 +269,7 @@ function setupImageHandlers() {
   const galleryBtn = document.getElementById('uploadGalleryBtn');
   const galleryFileInput = document.getElementById('galleryFileInput');
 
+  galleryFileInput?.addEventListener('click', (e) => e.stopPropagation());
   galleryBtn?.addEventListener('click', () => galleryFileInput?.click());
 
   galleryFileInput?.addEventListener('change', async (e) => {
@@ -275,10 +319,12 @@ function setMainImage(src) {
     const removeBtn = document.getElementById('removeMainImgBtn');
     const urlInput = document.getElementById('prodImageUrl');
 
-    preview.src = resolved;
-    preview.style.display = 'block';
-    noMsg.style.display = 'none';
-    removeBtn.style.display = 'block';
+    if (preview) {
+      preview.src = resolved;
+      preview.style.display = 'block';
+    }
+    if (noMsg) noMsg.style.display = 'none';
+    if (removeBtn) removeBtn.style.display = 'block';
     if (urlInput && !src.startsWith('data:')) {
       urlInput.value = resolved;
     }
@@ -310,7 +356,7 @@ function renderGallery() {
 
   container.innerHTML = currentGallery.map((imgSrc, idx) => `
     <div class="gallery-item" data-index="${idx}">
-      <img src="${resolveImageUrl(imgSrc)}" alt="Gallery photo ${idx + 1}">
+      <img src="${resolveImageUrl(imgSrc)}" alt="Gallery photo ${idx + 1}" onerror="this.onerror=null;this.src='/assets/images/vmark_logo.png'">
       <div class="item-actions">
         ${idx > 0 ? `
           <button type="button" class="action-badge" title="Move left" onclick="window.reorderGalleryItem(${idx}, -1)">
@@ -359,9 +405,9 @@ function setupFormSubmit() {
     const tagline = document.getElementById('prodTagline').value.trim();
     const shortDesc = document.getElementById('prodShortDesc').value.trim();
     const overview = document.getElementById('prodOverview').value.trim();
-    const category = document.getElementById('prodCategory').value;
     const categorySelect = document.getElementById('prodCategory');
-    const categoryName = categorySelect.options[categorySelect.selectedIndex]?.text || 'Machinery';
+    const category = categorySelect?.value || 'engraving-rotary';
+    const categoryName = (categorySelect && categorySelect.options[categorySelect.selectedIndex]?.text) || 'Machinery';
     const status = document.getElementById('prodStatus').checked ? 'active' : 'inactive';
     const displayOrder = Number(document.getElementById('prodDisplayOrder').value) || 1;
 
@@ -420,17 +466,17 @@ function setupFormSubmit() {
       if (res.success) {
         showToast(`Product "${name}" was saved successfully!`, 'success');
         setTimeout(() => {
-          window.location.href = 'products.html';
+          window.location.href = '/admin/products.html';
         }, 800);
       } else {
         showToast(res.error || 'Failed to save product.', 'error');
         saveBtn.disabled = false;
-        saveBtn.innerHTML = `Save Product`;
+        saveBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Save Product`;
       }
     } catch (err) {
       showToast(err.message || 'Error occurred while saving.', 'error');
       saveBtn.disabled = false;
-      saveBtn.innerHTML = `Save Product`;
+      saveBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Save Product`;
     }
   });
 }

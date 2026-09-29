@@ -39,7 +39,7 @@ export function showToast(message, type = 'info', duration = 4000) {
 
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
-  
+
   let iconSvg = '';
   if (type === 'success') {
     iconSvg = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
@@ -69,12 +69,12 @@ export function showToast(message, type = 'info', duration = 4000) {
 }
 
 // Confirmation Dialog Modal
-export function showConfirmDialog({ 
-  title = "Are you sure?", 
-  message = "This action cannot be undone.", 
-  confirmText = "Delete", 
+export function showConfirmDialog({
+  title = "Are you sure?",
+  message = "This action cannot be undone.",
+  confirmText = "Delete",
   cancelText = "Cancel",
-  isDanger = true 
+  isDanger = true
 }) {
   return new Promise((resolve) => {
     let overlay = document.getElementById('adminConfirmModal');
@@ -163,11 +163,11 @@ export function compressImage(file, maxWidth = 1400, quality = 0.85) {
         // Export as WebP if browser supports, otherwise jpeg
         const mimeType = 'image/webp';
         const dataUrl = canvas.toDataURL(mimeType, quality);
-        
+
         // Approximate size
         const head = `data:${mimeType};base64,`;
         const sizeBytes = Math.round((dataUrl.length - head.length) * 3 / 4);
-        const sizeFormatted = sizeBytes > 1024 * 1024 
+        const sizeFormatted = sizeBytes > 1024 * 1024
           ? `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`
           : `${Math.round(sizeBytes / 1024)} KB`;
 
@@ -200,7 +200,7 @@ export async function initAdminLayout(activeNavId = 'dashboard', pageTitle = 'Da
   if (sidebarContainer) {
     sidebarContainer.innerHTML = `
       <div class="sidebar-header">
-        <a href="index.html" class="sidebar-brand">
+        <a href="/admin/index.html" class="sidebar-brand">
           <img src="/assets/images/vmark_logo.png" alt="V MARK Logo" class="sidebar-logo">
           <div class="brand-text">
             <h2>V MARK</h2>
@@ -211,54 +211,54 @@ export async function initAdminLayout(activeNavId = 'dashboard', pageTitle = 'Da
 
       <nav class="sidebar-nav">
         <div class="nav-section-title">Core Management</div>
-        <a href="index.html" class="sidebar-nav-link ${activeNavId === 'dashboard' ? 'active' : ''}">
+        <a href="/admin/index.html" class="sidebar-nav-link ${activeNavId === 'dashboard' ? 'active' : ''}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
           Dashboard
         </a>
 
         <div class="nav-section-title">Machinery Catalog</div>
-        <a href="products.html" class="sidebar-nav-link ${activeNavId === 'products' ? 'active' : ''}">
+        <a href="/admin/products.html" class="sidebar-nav-link ${activeNavId === 'products' ? 'active' : ''}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
           All Products
         </a>
-        <a href="product-editor.html" class="sidebar-nav-link ${activeNavId === 'product-new' ? 'active' : ''}">
+        <a href="/admin/product-editor.html" class="sidebar-nav-link ${activeNavId === 'product-new' ? 'active' : ''}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
           Add Product
         </a>
-        <a href="categories.html" class="sidebar-nav-link ${activeNavId === 'categories' ? 'active' : ''}">
+        <a href="/admin/categories.html" class="sidebar-nav-link ${activeNavId === 'categories' ? 'active' : ''}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
           Categories
         </a>
 
         <div class="nav-section-title">Accessories</div>
-        <a href="accessories.html" class="sidebar-nav-link ${activeNavId === 'accessories' ? 'active' : ''}">
+        <a href="/admin/accessories.html" class="sidebar-nav-link ${activeNavId === 'accessories' ? 'active' : ''}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
           All Accessories
         </a>
-        <a href="accessory-editor.html" class="sidebar-nav-link ${activeNavId === 'accessory-new' ? 'active' : ''}">
+        <a href="/admin/accessory-editor.html" class="sidebar-nav-link ${activeNavId === 'accessory-new' ? 'active' : ''}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
           Add Accessory
         </a>
 
         <div class="nav-section-title">Sales & Leads</div>
-        <a href="inquiries.html" class="sidebar-nav-link ${activeNavId === 'inquiries' ? 'active' : ''}">
+        <a href="/admin/inquiries.html" class="sidebar-nav-link ${activeNavId === 'inquiries' ? 'active' : ''}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
           Customer Inquiries
           <span class="nav-badge" id="sidebarInquiryBadge" style="display:none;">0</span>
         </a>
 
         <div class="nav-section-title">Assets & Content</div>
-        <a href="media.html" class="sidebar-nav-link ${activeNavId === 'media' ? 'active' : ''}">
+        <a href="/admin/media.html" class="sidebar-nav-link ${activeNavId === 'media' ? 'active' : ''}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
           Media Library
         </a>
-        <a href="content.html" class="sidebar-nav-link ${activeNavId === 'content' ? 'active' : ''}">
+        <a href="/admin/content.html" class="sidebar-nav-link ${activeNavId === 'content' ? 'active' : ''}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
           Website Content
         </a>
 
         <div class="nav-section-title">Configuration</div>
-        <a href="settings.html" class="sidebar-nav-link ${activeNavId === 'settings' ? 'active' : ''}">
+        <a href="/admin/settings.html" class="sidebar-nav-link ${activeNavId === 'settings' ? 'active' : ''}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
           Settings
         </a>
@@ -276,9 +276,25 @@ export async function initAdminLayout(activeNavId = 'dashboard', pageTitle = 'Da
   // 3. Inject Header HTML
   const headerContainer = document.getElementById('adminHeader');
   if (headerContainer) {
+    const breadcrumbRoutes = {
+      'Admin': '/admin/index.html',
+      'Dashboard': '/admin/index.html',
+      'Products': '/admin/products.html',
+      'Accessories': '/admin/accessories.html',
+      'Categories': '/admin/categories.html',
+      'Inquiries': '/admin/inquiries.html',
+      'Media': '/admin/media.html',
+      'Content': '/admin/content.html',
+      'Settings': '/admin/settings.html'
+    };
+
     const breadcrumbHtml = breadcrumbTrail.map((crumb, idx) => {
       const isLast = idx === breadcrumbTrail.length - 1;
-      return `<span ${isLast ? 'style="color:var(--text-heading);font-weight:600;"' : ''}>${crumb}</span>`;
+      const href = breadcrumbRoutes[crumb];
+      if (isLast || !href) {
+        return `<span ${isLast ? 'style="color:var(--text-heading);font-weight:600;"' : ''}>${crumb}</span>`;
+      }
+      return `<a href="${href}" style="color:inherit;text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${crumb}</a>`;
     }).join(' <span style="opacity:0.4;">/</span> ');
 
     headerContainer.innerHTML = `
@@ -307,7 +323,7 @@ export async function initAdminLayout(activeNavId = 'dashboard', pageTitle = 'Da
           <div class="profile-dropdown" id="notificationDropdown" style="width:300px;right:0;">
             <div style="padding:0.75rem 0.85rem;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;">
               <strong style="font-size:0.85rem;color:var(--text-heading);">Notifications</strong>
-              <a href="inquiries.html?status=new" style="font-size:0.75rem;">View All</a>
+              <a href="/admin/inquiries.html?status=new" style="font-size:0.75rem;">View All</a>
             </div>
             <div id="notificationList" style="max-height:260px;overflow-y:auto;">
               <p style="padding:1rem;color:var(--text-muted);font-size:0.8rem;text-align:center;">Loading notifications...</p>
@@ -331,7 +347,7 @@ export async function initAdminLayout(activeNavId = 'dashboard', pageTitle = 'Da
               <div style="font-weight:600;font-size:0.85rem;color:var(--text-heading);">${currentAdmin ? currentAdmin.name : 'Admin'}</div>
               <div style="font-size:0.72rem;color:var(--text-muted);">${currentAdmin ? currentAdmin.email : ''}</div>
             </div>
-            <a href="settings.html" class="dropdown-item">
+            <a href="/admin/settings.html" class="dropdown-item">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
               Account Settings
             </a>
@@ -398,7 +414,7 @@ export async function initAdminLayout(activeNavId = 'dashboard', pageTitle = 'Da
     if (searchInput) {
       searchInput.onkeydown = (e) => {
         if (e.key === 'Enter' && searchInput.value.trim()) {
-          window.location.href = `products.html?search=${encodeURIComponent(searchInput.value.trim())}`;
+          window.location.href = `/admin/products.html?search=${encodeURIComponent(searchInput.value.trim())}`;
         }
       };
     }
@@ -454,7 +470,7 @@ export async function updateNotificationBadge() {
         notifList.innerHTML = `<p style="padding:1.5rem;color:var(--text-muted);font-size:0.8rem;text-align:center;">No new inquiries</p>`;
       } else {
         notifList.innerHTML = newInquiries.slice(0, 5).map(inq => `
-          <a href="inquiry-detail.html?id=${encodeURIComponent(inq.id)}" style="display:block;padding:0.65rem 0.85rem;border-bottom:1px solid var(--border-light);text-decoration:none;transition:background 0.15s ease;" onmouseover="this.style.background='var(--surface-hover)'" onmouseout="this.style.background='transparent'">
+          <a href="/admin/inquiry-detail.html?id=${encodeURIComponent(inq.id)}" style="display:block;padding:0.65rem 0.85rem;border-bottom:1px solid var(--border-light);text-decoration:none;transition:background 0.15s ease;" onmouseover="this.style.background='var(--surface-hover)'" onmouseout="this.style.background='transparent'">
             <div style="font-weight:600;font-size:0.82rem;color:var(--text-heading);">${inq.customerName} <span style="font-size:0.72rem;color:var(--text-muted);font-weight:400;">(${inq.companyName || 'Private'})</span></div>
             <div style="font-size:0.75rem;color:var(--teal-600);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${inq.product || 'Machinery'}</div>
             <div style="font-size:0.68rem;color:var(--text-muted);">${new Date(inq.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>

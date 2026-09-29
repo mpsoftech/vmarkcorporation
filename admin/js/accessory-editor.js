@@ -45,7 +45,7 @@ async function loadAccessoryData(id) {
     const item = await getAccessoryById(id);
     if (!item) {
       showToast('Accessory not found in database.', 'error');
-      setTimeout(() => { window.location.href = 'accessories.html'; }, 1500);
+      setTimeout(() => { window.location.href = '/admin/accessories.html'; }, 1500);
       return;
     }
 
@@ -246,7 +246,7 @@ function renderGallery() {
 
   container.innerHTML = currentGallery.map((imgSrc, idx) => `
     <div class="gallery-item" data-index="${idx}">
-      <img src="${resolveImageUrl(imgSrc)}" alt="Gallery ${idx + 1}">
+      <img src="${resolveImageUrl(imgSrc)}" alt="Gallery ${idx + 1}" onerror="this.onerror=null;this.src='/assets/images/vmark_logo.png'">
       <div class="item-actions">
         <button type="button" class="action-badge" title="Delete photo" onclick="window.deleteAccGalleryItem(${idx})">
           ×
@@ -315,7 +315,7 @@ function setupFormSubmit() {
       const res = await saveAccessory(payload);
       if (res.success) {
         showToast(`Accessory "${name}" saved successfully!`, 'success');
-        setTimeout(() => { window.location.href = 'accessories.html'; }, 800);
+        setTimeout(() => { window.location.href = '/admin/accessories.html'; }, 800);
       } else {
         showToast(res.error || 'Failed to save accessory.', 'error');
         saveBtn.disabled = false;

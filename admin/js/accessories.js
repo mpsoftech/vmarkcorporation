@@ -62,7 +62,7 @@ async function loadAndRenderAccessories() {
             </svg>
             <h4 style="color:var(--text-heading);margin-bottom:0.35rem;">No accessories found</h4>
             <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1rem;">Add consumables, UV lamps, or spare parts to the catalog.</p>
-            <a href="accessory-editor.html" class="btn btn-primary btn-sm">+ Add New Accessory</a>
+            <a href="/admin/accessory-editor.html" class="btn btn-primary btn-sm">+ Add New Accessory</a>
           </td>
         </tr>
       `;
@@ -82,11 +82,11 @@ async function loadAndRenderAccessories() {
       return `
         <tr data-id="${item.id}">
           <td>
-            <img src="${imgSrc}" alt="${escapeHtml(item.name)}" class="table-thumb" onerror="this.src='/assets/images/vmark_logo.png'">
+            <img src="${imgSrc}" alt="${escapeHtml(item.name)}" class="table-thumb" onerror="this.onerror=null;this.src='/assets/images/vmark_logo.png'">
           </td>
           <td>
             <div style="font-weight:600;color:var(--text-heading);font-size:0.9rem;">
-              <a href="accessory-editor.html?id=${encodeURIComponent(item.id)}" style="color:inherit;">
+              <a href="/admin/accessory-editor.html?id=${encodeURIComponent(item.id)}" style="color:inherit;">
                 ${escapeHtml(item.name)}
               </a>
             </div>
@@ -113,7 +113,7 @@ async function loadAndRenderAccessories() {
               <a href="/product.html?id=${encodeURIComponent(item.id)}" target="_blank" class="btn-icon" title="View live">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
               </a>
-              <a href="accessory-editor.html?id=${encodeURIComponent(item.id)}" class="btn-icon" title="Edit accessory">
+              <a href="/admin/accessory-editor.html?id=${encodeURIComponent(item.id)}" class="btn-icon" title="Edit accessory">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
               </a>
               <button type="button" class="btn-icon delete-acc-btn" data-id="${item.id}" data-name="${escapeHtml(item.name)}" title="Delete accessory" style="color:#dc2626;">

@@ -94,8 +94,16 @@ function renderCatalog() {
   const countIndicator = document.getElementById('catalogCountIndicator');
   if (!gridContainer || !currentCatalog) return;
 
+  const isAcc = (cat) => cat === 'accessories' || cat === 'accessories-spares';
+
   const filtered = currentCatalog.filter(product => {
-    const matchesCategory = (currentCategory === 'all') || (product.category === currentCategory || product.categoryId === currentCategory);
+    // Strictly exclude any inactive products or accessories
+    if (product.status === 'inactive') return false;
+
+    const matchesCategory = (currentCategory === 'all') || 
+      (product.category === currentCategory || product.categoryId === currentCategory) ||
+      (isAcc(currentCategory) && isAcc(product.category || product.categoryId));
+
     const matchesSearch = !currentSearchQuery || (
       (product.name && product.name.toLowerCase().includes(currentSearchQuery)) ||
       (product.tagline && product.tagline.toLowerCase().includes(currentSearchQuery)) ||
@@ -106,9 +114,11 @@ function renderCatalog() {
     return matchesCategory && matchesSearch;
   });
 
+  const activeTotal = currentCatalog.filter(p => p.status !== 'inactive').length;
+
   // Update count indicator
   if (countIndicator) {
-    countIndicator.innerHTML = `Showing <strong>${filtered.length}</strong> of <strong>${currentCatalog.length}</strong> industrial machines and accessories`;
+    countIndicator.innerHTML = `Showing <strong>${filtered.length}</strong> of <strong>${activeTotal}</strong> industrial machines and accessories`;
   }
 
   if (filtered.length === 0) {

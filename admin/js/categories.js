@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadAndRenderCategories();
 
   subscribeToEvents(async (event) => {
-    if (event.type.startsWith('category_') || event.type.startsWith('product_')) {
+    if (event && typeof event.type === 'string' && (event.type.startsWith('category_') || event.type.startsWith('product_') || event.type === 'cloud_synced')) {
       await loadAndRenderCategories();
     }
   });
@@ -24,6 +24,17 @@ async function loadAndRenderCategories() {
   try {
     const categories = await getAllCategories();
 
+    if (!Array.isArray(categories) || categories.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" style="text-align:center;padding:3rem;color:var(--text-muted);">
+            No categories found. Click "Add New Category" above to create one.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
     tbody.innerHTML = categories.map(cat => {
       const isActive = cat.status === 'active';
       const imgSrc = resolveImageUrl(cat.image);
@@ -31,7 +42,7 @@ async function loadAndRenderCategories() {
       return `
         <tr data-id="${cat.id}">
           <td>
-            <img src="${imgSrc}" alt="${escapeHtml(cat.name)}" class="table-thumb" onerror="this.src='/assets/images/vmark_logo.png'">
+            <img src="${imgSrc}" alt="${escapeHtml(cat.name)}" class="table-thumb" onerror="this.onerror=null;this.src='/assets/images/vmark_logo.png'">
           </td>
           <td>
             <div style="font-weight:600;color:var(--text-heading);">${escapeHtml(cat.name)}</div>
@@ -94,6 +105,13 @@ async function loadAndRenderCategories() {
 
   } catch (err) {
     console.error('Error loading categories:', err);
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" style="text-align:center;padding:2.5rem;color:#dc2626;">
+          Failed to load categories. Please refresh or try again.
+        </td>
+      </tr>
+    `;
   }
 }
 
@@ -105,6 +123,7 @@ function setupModalHandlers() {
   const form = document.getElementById('categoryForm');
   const nameInput = document.getElementById('catName');
   const slugInput = document.getElementById('catSlug');
+  const saveBtn = document.getElementById('saveCatBtn');
 
   openBtn?.addEventListener('click', () => {
     document.getElementById('categoryModalTitle').textContent = 'Add New Category';
@@ -112,12 +131,23 @@ function setupModalHandlers() {
     form.reset();
     document.getElementById('catStatus').checked = true;
     document.getElementById('catOrder').value = '1';
-    modal.classList.add('open');
+    modal?.classList.add('open');
   });
 
-  const closeModal = () => modal.classList.remove('open');
+  const closeModal = () => modal?.classList.remove('open');
   closeBtn?.addEventListener('click', closeModal);
   cancelBtn?.addEventListener('click', closeModal);
+
+  // Close on backdrop click or ESC
+  modal?.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal?.classList.contains('open')) {
+      closeModal();
+    }
+  });
 
   nameInput?.addEventListener('input', () => {
     if (!document.getElementById('catEditId').value) {
@@ -130,50 +160,73 @@ function setupModalHandlers() {
 
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const editId = document.getElementById('catEditId').value;
-    const name = nameInput.value.trim();
-    const slug = slugInput.value.trim();
-    const description = document.getElementById('catDesc').value.trim();
-    const image = document.getElementById('catImage').value.trim() || '/assets/images/rotary_screen_coating_machine.jpg';
-    const displayOrder = Number(document.getElementById('catOrder').value) || 1;
-    const status = document.getElementById('catStatus').checked ? 'active' : 'inactive';
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+    }
 
-    const payload = {
-      name,
-      slug,
-      description,
-      image,
-      displayOrder,
-      status
-    };
+    try {
+      const editId = document.getElementById('catEditId').value;
+      const name = nameInput.value.trim();
+      const slug = slugInput.value.trim();
+      const description = document.getElementById('catDesc').value.trim();
+      const image = document.getElementById('catImage').value.trim() || '/assets/images/rotary_screen_coating_machine.jpg';
+      const displayOrder = Number(document.getElementById('catOrder').value) || 1;
+      const status = document.getElementById('catStatus').checked ? 'active' : 'inactive';
 
-    if (editId) payload.id = editId;
+      const payload = {
+        name,
+        slug,
+        description,
+        image,
+        displayOrder,
+        status
+      };
 
-    const res = await saveCategory(payload);
-    if (res.success) {
-      showToast(`Category "${name}" saved!`, 'success');
-      closeModal();
-      await loadAndRenderCategories();
-    } else {
-      showToast(res.error || 'Failed to save category.', 'error');
+      if (editId) payload.id = editId;
+
+      const res = await saveCategory(payload);
+      if (res.success) {
+        showToast(`Category "${name}" saved!`, 'success');
+        closeModal();
+        await loadAndRenderCategories();
+      } else {
+        showToast(res.error || 'Failed to save category.', 'error');
+      }
+    } catch (err) {
+      console.error('Error saving category:', err);
+      showToast(err.message || 'Failed to save category.', 'error');
+    } finally {
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Category';
+      }
     }
   });
 }
 
 async function openEditCategoryModal(id) {
-  const cat = await getCategoryById(id);
-  if (!cat) return;
+  try {
+    const cat = await getCategoryById(id);
+    if (!cat) {
+      showToast('Category not found.', 'error');
+      return;
+    }
 
-  document.getElementById('categoryModalTitle').textContent = `Edit Category: ${cat.name}`;
-  document.getElementById('catEditId').value = cat.id;
-  document.getElementById('catName').value = cat.name || '';
-  document.getElementById('catSlug').value = cat.slug || cat.id || '';
-  document.getElementById('catDesc').value = cat.description || '';
-  document.getElementById('catImage').value = cat.image || '';
-  document.getElementById('catOrder').value = cat.displayOrder || 1;
-  document.getElementById('catStatus').checked = (cat.status === 'active');
+    document.getElementById('categoryModalTitle').textContent = `Edit Category: ${cat.name}`;
+    document.getElementById('catEditId').value = cat.id;
+    document.getElementById('catName').value = cat.name || '';
+    document.getElementById('catSlug').value = cat.slug || cat.id || '';
+    document.getElementById('catDesc').value = cat.description || '';
+    document.getElementById('catImage').value = cat.image || '';
+    document.getElementById('catOrder').value = cat.displayOrder || 1;
+    document.getElementById('catStatus').checked = (cat.status === 'active');
 
-  document.getElementById('categoryModal').classList.add('open');
+    document.getElementById('categoryModal')?.classList.add('open');
+  } catch (err) {
+    console.error('Error opening category edit modal:', err);
+    showToast('Failed to load category for editing.', 'error');
+  }
 }
 
 function escapeHtml(str) {

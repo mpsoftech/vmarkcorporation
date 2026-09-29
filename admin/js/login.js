@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // If already logged in, redirect to dashboard or redirect param
   const current = getCurrentAdmin();
   const urlParams = new URLSearchParams(window.location.search);
-  const redirectUrl = urlParams.get('redirect') ? decodeURIComponent(urlParams.get('redirect')) : 'index.html';
+  const redirectUrl = urlParams.get('redirect') ? decodeURIComponent(urlParams.get('redirect')) : '/admin/index.html';
 
   if (current) {
     window.location.href = redirectUrl;

@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
       currentCatalog = await getPublicCatalog();
       await applyCMSContent();
       renderProducts();
+      renderAccessories(currentCatalog);
       populateRFQDropdown(currentCatalog);
     } catch (e) {
       console.debug('Catalog/CMS load fallback:', e);
@@ -39,6 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
       currentCatalog = await getPublicCatalog();
       await applyCMSContent();
       renderProducts();
+      renderAccessories(currentCatalog);
       populateRFQDropdown(currentCatalog);
     } catch (err) {
       console.debug('Catalog live reload notice:', err);
@@ -210,6 +212,71 @@ function renderProducts() {
   });
 }
 
+function renderAccessories(catalog = currentCatalog) {
+  const container = document.getElementById('accessoriesGrid');
+  if (!container) return;
+
+  const items = (catalog && catalog.length > 0) ? catalog : STATIC_PRODUCTS;
+  
+  // Set of all active accessory IDs
+  const activeIds = new Set(
+    items
+      .filter(p => (p.category === 'accessories' || p.categoryId === 'accessories') && p.status !== 'inactive')
+      .map(p => p.id)
+  );
+
+  // Show or hide static cards based on active status
+  const cards = container.querySelectorAll('.accessory-card[data-accessory-id]');
+  cards.forEach(card => {
+    const accId = card.getAttribute('data-accessory-id');
+    if (activeIds.has(accId)) {
+      card.style.display = '';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+
+  // Dynamically append any new accessories created in admin that are not in the static 16
+  items.forEach(item => {
+    if ((item.category === 'accessories' || item.categoryId === 'accessories') && item.status !== 'inactive') {
+      const existing = container.querySelector(`.accessory-card[data-accessory-id="${item.id}"]`) ||
+                       container.querySelector(`.accessory-card[data-dynamic-id="${item.id}"]`);
+      if (!existing) {
+        const card = document.createElement('div');
+        card.className = 'accessory-card';
+        card.setAttribute('data-dynamic-id', item.id);
+        card.setAttribute('data-accessory-id', item.id);
+        card.innerHTML = `
+          <div class="accessory-card-thumb">
+            <img src="${resolveImageUrl(item.image)}" alt="${item.name} — V MARK Corporation" loading="lazy" onerror="this.onerror=null;this.src='/assets/images/vmark_logo.png'">
+          </div>
+          <h4 class="accessory-card-title">${item.name}</h4>
+          <p class="accessory-card-desc">${item.shortDesc || item.tagline || ''}</p>
+          <button class="btn btn-outline btn-sm" onclick="openProductModal('${encodeURIComponent(item.id)}')" type="button">Details</button>
+        `;
+        container.appendChild(card);
+      }
+    }
+  });
+
+  // If a dynamically added card was toggled to inactive, hide it
+  container.querySelectorAll('.accessory-card[data-dynamic-id]').forEach(dynCard => {
+    const id = dynCard.getAttribute('data-dynamic-id');
+    if (!activeIds.has(id)) {
+      dynCard.style.display = 'none';
+    } else {
+      dynCard.style.display = '';
+    }
+  });
+
+  // If all accessories are inactive, hide the section gracefully
+  const accessoriesSection = document.getElementById('accessories');
+  if (accessoriesSection) {
+    const visibleCards = Array.from(container.querySelectorAll('.accessory-card')).filter(c => c.style.display !== 'none');
+    accessoriesSection.style.display = visibleCards.length > 0 ? '' : 'none';
+  }
+}
+
 /* ================= PRODUCT DETAIL MODAL ================= */
 let activeModalProductId = null;
 
@@ -243,7 +310,7 @@ function openProductModal(productId) {
   if (!modal) return;
 
   const catalog = (currentCatalog && currentCatalog.length > 0) ? currentCatalog : STATIC_PRODUCTS;
-  const product = catalog.find(p => p.id === productId || p.slug === productId);
+  const product = catalog.find(p => (p.id === productId || p.slug === productId) && p.status !== 'inactive');
   if (!product) return;
 
   activeModalProductId = productId;
@@ -259,7 +326,7 @@ function openProductModal(productId) {
   const imgElem = document.getElementById('modalProductImg');
   const modalImgSrc = resolveImageUrl(product.image);
   imgElem.src = modalImgSrc;
-  imgElem.onerror = () => { imgElem.src = '/assets/images/vmark_logo.png'; };
+  imgElem.onerror = () => { imgElem.onerror = null; imgElem.src = '/assets/images/vmark_logo.png'; };
   imgElem.alt = `${product.name} — V MARK Corporation`;
 
   document.getElementById('modalProductBadge').textContent = product.badge;

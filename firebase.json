@@ -20,6 +20,128 @@
       "**/.*",
       "**/node_modules/**"
     ],
+    "redirects": [
+      {
+        "source": "/inquiries.html",
+        "destination": "/admin/inquiries.html",
+        "type": 301
+      },
+      {
+        "source": "/inquiries",
+        "destination": "/admin/inquiries.html",
+        "type": 301
+      },
+      {
+        "source": "/inquiry-detail.html",
+        "destination": "/admin/inquiries.html",
+        "type": 301
+      },
+      {
+        "source": "/inquiry-detail",
+        "destination": "/admin/inquiries.html",
+        "type": 301
+      },
+      {
+        "source": "/categories.html",
+        "destination": "/admin/categories.html",
+        "type": 301
+      },
+      {
+        "source": "/categories",
+        "destination": "/admin/categories.html",
+        "type": 301
+      },
+      {
+        "source": "/product-editor.html",
+        "destination": "/admin/product-editor.html",
+        "type": 301
+      },
+      {
+        "source": "/product-editor",
+        "destination": "/admin/product-editor.html",
+        "type": 301
+      },
+      {
+        "source": "/products/new",
+        "destination": "/admin/product-editor.html",
+        "type": 301
+      },
+      {
+        "source": "/accessory-editor.html",
+        "destination": "/admin/accessory-editor.html",
+        "type": 301
+      },
+      {
+        "source": "/accessory-editor",
+        "destination": "/admin/accessory-editor.html",
+        "type": 301
+      },
+      {
+        "source": "/accessories/new",
+        "destination": "/admin/accessory-editor.html",
+        "type": 301
+      },
+      {
+        "source": "/accessories.html",
+        "destination": "/admin/accessories.html",
+        "type": 301
+      },
+      {
+        "source": "/accessories",
+        "destination": "/admin/accessories.html",
+        "type": 301
+      },
+      {
+        "source": "/media.html",
+        "destination": "/admin/media.html",
+        "type": 301
+      },
+      {
+        "source": "/media",
+        "destination": "/admin/media.html",
+        "type": 301
+      },
+      {
+        "source": "/content.html",
+        "destination": "/admin/content.html",
+        "type": 301
+      },
+      {
+        "source": "/content",
+        "destination": "/admin/content.html",
+        "type": 301
+      },
+      {
+        "source": "/settings.html",
+        "destination": "/admin/settings.html",
+        "type": 301
+      },
+      {
+        "source": "/settings",
+        "destination": "/admin/settings.html",
+        "type": 301
+      },
+      {
+        "source": "/login.html",
+        "destination": "/admin/login.html",
+        "type": 301
+      },
+      {
+        "source": "/login",
+        "destination": "/admin/login.html",
+        "type": 301
+      },
+      {
+        "source": "/dashboard.html",
+        "destination": "/admin/index.html",
+        "type": 301
+      },
+      {
+        "source": "/dashboard",
+        "destination": "/admin/index.html",
+        "type": 301
+      }
+    ],
     "rewrites": [
       {
         "source": "/admin",
@@ -38,11 +160,19 @@
         "destination": "/admin/product-editor.html"
       },
       {
+        "source": "/admin/product-editor",
+        "destination": "/admin/product-editor.html"
+      },
+      {
         "source": "/admin/accessories",
         "destination": "/admin/accessories.html"
       },
       {
         "source": "/admin/accessories/new",
+        "destination": "/admin/accessory-editor.html"
+      },
+      {
+        "source": "/admin/accessory-editor",
         "destination": "/admin/accessory-editor.html"
       },
       {
@@ -52,6 +182,10 @@
       {
         "source": "/admin/inquiries",
         "destination": "/admin/inquiries.html"
+      },
+      {
+        "source": "/admin/inquiry-detail",
+        "destination": "/admin/inquiry-detail.html"
       },
       {
         "source": "/admin/media",

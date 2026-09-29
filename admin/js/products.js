@@ -2,7 +2,7 @@
  * V MARK CORPORATION - Product Catalog Management Controller
  */
 import { initAdminLayout, showToast, showConfirmDialog } from './admin-ui.js';
-import { getAllProducts, deleteProduct, toggleProductStatus, subscribeToEvents, resolveImageUrl } from './admin-db.js';
+import { getAllProducts, deleteProduct, toggleProductStatus, subscribeToEvents, resolveImageUrl, getAllCategories } from './admin-db.js';
 
 let currentFilters = {
   search: '',
@@ -10,6 +10,9 @@ let currentFilters = {
   status: 'all',
   sortBy: 'order'
 };
+
+let renderDebounceTimer = null;
+let lastRenderedFingerprint = '';
 
 document.addEventListener('DOMContentLoaded', async () => {
   await initAdminLayout('products', 'Product Catalog', ['Admin', 'Products']);
@@ -28,15 +31,47 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   setupEventListeners();
+  await populateCategoryFilter();
   await loadAndRenderProducts();
 
-  // Listen to cross-tab updates
+  // Listen to cross-tab updates & live sync with debounced coalescing
   subscribeToEvents(async (event) => {
-    if (event.type.startsWith('product_')) {
-      await loadAndRenderProducts();
+    if (event && typeof event.type === 'string' && (event.type.startsWith('product_') || event.type === 'cloud_synced' || event.type === 'database_seeded')) {
+      scheduleRenderProducts(150);
     }
   });
 });
+
+function scheduleRenderProducts(delay = 150) {
+  clearTimeout(renderDebounceTimer);
+  renderDebounceTimer = setTimeout(() => {
+    loadAndRenderProducts();
+  }, delay);
+}
+
+async function populateCategoryFilter() {
+  const select = document.getElementById('categoryFilter');
+  if (!select) return;
+
+  try {
+    const categories = await getAllCategories();
+    if (Array.isArray(categories) && categories.length > 0) {
+      const selectedVal = currentFilters.category || select.value || 'all';
+      const currentOpts = Array.from(select.options).map(o => o.value).join(',');
+      const newOpts = ['all', ...categories.map(c => c.id)].join(',');
+
+      // Only update DOM if options actually changed (prevents blink/reset)
+      if (currentOpts !== newOpts) {
+        select.innerHTML = '<option value="all">All Categories</option>' + categories.map(cat => `
+          <option value="${cat.id}">${escapeHtml(cat.name)}</option>
+        `).join('');
+      }
+      select.value = selectedVal;
+    }
+  } catch (err) {
+    console.debug('Category filter populate notice:', err);
+  }
+}
 
 function setupEventListeners() {
   const searchInput = document.getElementById('productSearchInput');
@@ -44,27 +79,31 @@ function setupEventListeners() {
   const statusFilter = document.getElementById('statusFilter');
   const sortBySelect = document.getElementById('sortBySelect');
 
-  let debounceTimer;
+  let searchTimer;
   searchInput?.addEventListener('input', (e) => {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
       currentFilters.search = e.target.value.trim();
+      lastRenderedFingerprint = ''; // Force redraw on user search
       loadAndRenderProducts();
     }, 200);
   });
 
   categoryFilter?.addEventListener('change', (e) => {
     currentFilters.category = e.target.value;
+    lastRenderedFingerprint = ''; // Force redraw on filter change
     loadAndRenderProducts();
   });
 
   statusFilter?.addEventListener('change', (e) => {
     currentFilters.status = e.target.value;
+    lastRenderedFingerprint = ''; // Force redraw on status change
     loadAndRenderProducts();
   });
 
   sortBySelect?.addEventListener('change', (e) => {
     currentFilters.sortBy = e.target.value;
+    lastRenderedFingerprint = ''; // Force redraw on sort change
     loadAndRenderProducts();
   });
 }
@@ -80,22 +119,32 @@ async function loadAndRenderProducts() {
       countBadge.textContent = `Showing ${products.length} machine${products.length === 1 ? '' : 's'}`;
     }
 
-    if (products.length === 0) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="7" style="text-align:center;padding:3.5rem 1.5rem;">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" style="margin-bottom:0.75rem;">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-            <h4 style="color:var(--text-heading);margin-bottom:0.35rem;">No machinery found</h4>
-            <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1rem;">Try adjusting your search criteria or add a new machine.</p>
-            <a href="product-editor.html" class="btn btn-primary btn-sm">+ Add New Product</a>
-          </td>
-        </tr>
-      `;
+    if (!Array.isArray(products) || products.length === 0) {
+      if (lastRenderedFingerprint !== 'empty') {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" style="text-align:center;padding:3.5rem 1.5rem;">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" style="margin-bottom:0.75rem;">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <h4 style="color:var(--text-heading);margin-bottom:0.35rem;">No machinery found</h4>
+              <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1rem;">Try adjusting your search criteria or add a new machine.</p>
+              <a href="/admin/product-editor.html" class="btn btn-primary btn-sm">+ Add New Product</a>
+            </td>
+          </tr>
+        `;
+        lastRenderedFingerprint = 'empty';
+      }
       return;
     }
+
+    // Compute fingerprint to avoid redundant DOM destruction and image blinking
+    const fingerprint = products.map(p => `${p.id}_${p.name}_${p.categoryId}_${p.status}_${p.displayOrder}`).join('|');
+    if (fingerprint === lastRenderedFingerprint) {
+      return; // Exact same data is already rendered, skip repaint
+    }
+    lastRenderedFingerprint = fingerprint;
 
     tbody.innerHTML = products.map(product => {
       const isActive = product.status === 'active';
@@ -106,14 +155,23 @@ async function loadAndRenderProducts() {
         year: 'numeric'
       }) : 'Default';
 
+      const catNameMap = {
+        'engraving-rotary': 'Rotary Screen & Engraving',
+        'colour-kitchen': 'Colour Kitchen Machinery',
+        'stirrers-mixers': 'Industrial Stirrers & Mixers',
+        'washing-plant': 'Washing Plant Machinery',
+        'accessories': 'Parts & Accessories'
+      };
+      const catLabel = catNameMap[product.categoryId] || catNameMap[product.category] || product.categoryName || product.categoryId;
+
       return `
         <tr data-id="${product.id}">
           <td>
-            <img src="${imgSrc}" alt="${escapeHtml(product.name)}" class="table-thumb" onerror="this.src='/assets/images/vmark_logo.png'">
+            <img src="${imgSrc}" alt="${escapeHtml(product.name)}" class="table-thumb" onerror="this.onerror=null;this.src='/assets/images/vmark_logo.png'">
           </td>
           <td>
             <div style="font-weight:600;color:var(--text-heading);font-size:0.9rem;">
-              <a href="product-editor.html?id=${encodeURIComponent(product.id)}" style="color:inherit;">
+              <a href="/admin/product-editor.html?id=${encodeURIComponent(product.id)}" style="color:inherit;">
                 ${escapeHtml(product.name)}
               </a>
             </div>
@@ -121,7 +179,7 @@ async function loadAndRenderProducts() {
             ${product.tagline ? `<div style="font-size:0.75rem;color:var(--teal-700);">${escapeHtml(product.tagline)}</div>` : ''}
           </td>
           <td>
-            <span style="font-weight:500;font-size:0.82rem;">${escapeHtml(product.categoryName || product.categoryId)}</span>
+            <span style="font-weight:500;font-size:0.82rem;">${escapeHtml(catLabel)}</span>
           </td>
           <td style="text-align:center;">
             <span style="font-weight:600;font-family:var(--font-mono);font-size:0.85rem;">${product.displayOrder || 1}</span>
@@ -140,7 +198,7 @@ async function loadAndRenderProducts() {
               <a href="/product.html?id=${encodeURIComponent(product.id)}" target="_blank" class="btn-icon" title="View on public site">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
               </a>
-              <a href="product-editor.html?id=${encodeURIComponent(product.id)}" class="btn-icon" title="Edit product">
+              <a href="/admin/product-editor.html?id=${encodeURIComponent(product.id)}" class="btn-icon" title="Edit product">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
               </a>
               <button type="button" class="btn-icon delete-product-btn" data-id="${product.id}" data-name="${escapeHtml(product.name)}" title="Delete product" style="color:#dc2626;">
@@ -178,6 +236,7 @@ async function loadAndRenderProducts() {
           const res = await deleteProduct(id);
           if (res.success) {
             showToast(`"${name}" was deleted successfully.`, 'success');
+            lastRenderedFingerprint = ''; // Force redraw on delete
             await loadAndRenderProducts();
           } else {
             showToast(res.error || 'Failed to delete product', 'error');
@@ -188,7 +247,7 @@ async function loadAndRenderProducts() {
 
   } catch (err) {
     console.error('Failed to load products:', err);
-    tbody.innerHTML = `<tr><td colspan="7" style="color:#dc2626;padding:2rem;text-align:center;">Error loading products: ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="color:#dc2626;padding:2rem;text-align:center;">Error loading products: ${escapeHtml(err.message || 'Unknown error')}</td></tr>`;
   }
 }
 

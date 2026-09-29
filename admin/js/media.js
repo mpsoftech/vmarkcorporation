@@ -166,7 +166,7 @@ async function loadAndRenderMedia() {
       return `
         <div class="media-card" data-id="${item.id}">
           <div class="media-thumb-box" onclick="window.openMediaPreview('${item.id}')">
-            <img src="${resolveImageUrl(item.fileUrl)}" alt="${escapeHtml(item.fileName)}" loading="lazy" onerror="this.src='/assets/images/vmark_logo.png'">
+            <img src="${resolveImageUrl(item.fileUrl)}" alt="${escapeHtml(item.fileName)}" loading="lazy" onerror="this.onerror=null;this.src='/assets/images/vmark_logo.png'">
             <span class="media-folder-tag">${escapeHtml(item.folder)}</span>
           </div>
           <div class="media-card-body">

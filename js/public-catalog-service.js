@@ -7,7 +7,7 @@
  * the public website updates instantly without needing a code rebuild.
  */
 
-import { getAllProducts, getAllAccessories, getProductById, getSiteContent, subscribeToEvents } from '../admin/js/admin-db.js';
+import { getAllProducts, getAllAccessories, getProductById, getAccessoryById, getSiteContent, subscribeToEvents } from '../admin/js/admin-db.js';
 import { VMARK_PRODUCTS as DEFAULT_STATIC_PRODUCTS } from './products-data.js';
 
 // Cache
@@ -37,12 +37,26 @@ export async function getPublicCatalog() {
     console.debug('[Public Catalog Service] Using static fallback catalog:', err);
   }
 
-  // Fallback
-  currentCatalog = DEFAULT_STATIC_PRODUCTS;
-  if (typeof window !== 'undefined') {
-    window.VMARK_PRODUCTS = DEFAULT_STATIC_PRODUCTS;
+  // Fallback: exclude any items marked inactive in database
+  try {
+    const [allProds, allAccs] = await Promise.all([
+      getAllProducts().catch(() => []),
+      getAllAccessories().catch(() => [])
+    ]);
+    const inactiveSet = new Set(
+      [...allProds, ...allAccs]
+        .filter(i => i && i.status === 'inactive')
+        .map(i => i.id)
+    );
+    currentCatalog = DEFAULT_STATIC_PRODUCTS.filter(p => !inactiveSet.has(p.id));
+  } catch (_) {
+    currentCatalog = DEFAULT_STATIC_PRODUCTS;
   }
-  return DEFAULT_STATIC_PRODUCTS;
+
+  if (typeof window !== 'undefined') {
+    window.VMARK_PRODUCTS = currentCatalog;
+  }
+  return currentCatalog;
 }
 
 /**
@@ -53,23 +67,41 @@ export async function getPublicProductById(id) {
   const cleanId = id.trim().toLowerCase();
 
   try {
-    // 1. Check database first
-    const fromDb = await getProductById(cleanId);
-    if (fromDb && fromDb.status === 'active') {
+    // 1. Check live database first (both products & accessories)
+    const fromDb = (await getProductById(cleanId)) || (await getAccessoryById(cleanId));
+    if (fromDb) {
+      if (fromDb.status === 'inactive') {
+        return null; // Explicitly hidden/deactivated by admin
+      }
       return fromDb;
     }
   } catch (e) {
     console.debug('[Public Catalog Service] Fetch product by ID DB error:', e);
   }
 
-  // 2. Check cached catalog
-  if (currentCatalog) {
-    const found = currentCatalog.find(p => p.id === cleanId || p.slug === cleanId);
-    if (found) return found;
+  // 2. Check cached active catalog
+  const catalog = currentCatalog || await getPublicCatalog();
+  if (Array.isArray(catalog)) {
+    const found = catalog.find(p => p.id === cleanId || p.slug === cleanId);
+    if (found) {
+      if (found.status === 'inactive') return null;
+      return found;
+    }
   }
 
-  // 3. Check static products
-  return DEFAULT_STATIC_PRODUCTS.find(p => p.id === cleanId || p.slug === cleanId) || null;
+  // 3. Check static products (only if not marked inactive in database)
+  const staticItem = DEFAULT_STATIC_PRODUCTS.find(p => p.id === cleanId || p.slug === cleanId);
+  if (staticItem) {
+    try {
+      const dbItem = (await getProductById(staticItem.id)) || (await getAccessoryById(staticItem.id));
+      if (dbItem && dbItem.status === 'inactive') {
+        return null;
+      }
+    } catch (_) {}
+    return staticItem;
+  }
+
+  return null;
 }
 
 /**
@@ -92,7 +124,8 @@ export function onCatalogChange(callback) {
       event.type.startsWith('product_') || 
       event.type.startsWith('accessory_') || 
       event.type.startsWith('database_') ||
-      event.type === 'content_updated'
+      event.type === 'content_updated' ||
+      event.type === 'cloud_synced'
     ) {
       console.log('[Public Catalog Service] Catalog modified by admin, refreshing view...', event.type);
       await getPublicCatalog();

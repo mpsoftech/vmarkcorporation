@@ -170,9 +170,7 @@ export async function logout() {
   sessionStorage.removeItem(AUTH_STORAGE_KEY);
 
   // Clean redirect to login
-  const isInAdmin = window.location.pathname.includes('/admin/');
-  const loginPath = isInAdmin ? 'login.html' : '/admin/login.html';
-  window.location.href = loginPath;
+  window.location.href = '/admin/login.html';
 }
 
 // Route Protection Guard
@@ -183,7 +181,7 @@ export function requireAuth() {
   // If on login page and already logged in, go to dashboard
   if (currentPath.endsWith('login.html') || currentPath.endsWith('/admin/login')) {
     if (current) {
-      window.location.href = 'index.html';
+      window.location.href = '/admin/index.html';
     }
     return;
   }
@@ -191,7 +189,7 @@ export function requireAuth() {
   // If on any protected admin page and NOT logged in, redirect to login
   if (!current) {
     const redirectUrl = encodeURIComponent(window.location.pathname + window.location.search);
-    window.location.href = `login.html?redirect=${redirectUrl}`;
+    window.location.href = `/admin/login.html?redirect=${redirectUrl}`;
   }
 }
 

@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (!inquiryId) {
     showToast('No inquiry ID specified.', 'error');
-    setTimeout(() => { window.location.href = 'inquiries.html'; }, 1000);
+    setTimeout(() => { window.location.href = '/admin/inquiries.html'; }, 1000);
     return;
   }
 
@@ -29,7 +29,7 @@ async function loadInquiryData() {
     currentInquiry = await getInquiryById(inquiryId);
     if (!currentInquiry) {
       showToast('Inquiry record not found.', 'error');
-      setTimeout(() => { window.location.href = 'inquiries.html'; }, 1500);
+      setTimeout(() => { window.location.href = '/admin/inquiries.html'; }, 1500);
       return;
     }
 
@@ -195,7 +195,7 @@ function setupActions() {
       const res = await deleteInquiry(inquiryId);
       if (res.success) {
         showToast('Inquiry deleted.', 'success');
-        setTimeout(() => { window.location.href = 'inquiries.html'; }, 800);
+        setTimeout(() => { window.location.href = '/admin/inquiries.html'; }, 800);
       } else {
         showToast('Failed to delete inquiry.', 'error');
       }
